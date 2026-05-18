@@ -1,0 +1,269 @@
+// Prisma Schema for NCP Education Account Manager
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 사용자 및 인증 ====================
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  password     String
+  name         String
+  role         Role     @default(VIEWER)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastLoginAt  DateTime?
+
+  auditLogs    AuditLog[]
+
+  @@index([email])
+  @@map("users")
+}
+
+enum Role {
+  SUPER_ADMIN  // 전체 시스템 관리
+  ADMIN        // 과정 관리 및 계정 관리
+  VIEWER       // 읽기 전용
+}
+
+// ==================== 과정 관리 ====================
+
+model Course {
+  id            String   @id @default(uuid())
+  name          String
+  description   String?
+  startDate     DateTime
+  endDate       DateTime
+  billingPeriod String?  // e.g., "2024-01" or "2024-Q1"
+  tags          String[] // PostgreSQL array
+  status        CourseStatus @default(ACTIVE)
+  budgetAmount          Float?   // 예산 (원, VAT 별도)
+  budgetRatio           Float?   // 할당 비율 (%, 예: 30.0)
+  totalCumulativeCost   Float?   // 누적 전체 사용료 (NCP billing API 기준, 캐시)
+  cumulativeCostUpdatedAt DateTime? // 전체 사용료 최근 갱신 시각
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  accounts      NcpAccount[]
+  costSnapshots CostSnapshot[]
+  cleanupJobs   CleanupJob[]
+
+  @@index([status])
+  @@index([startDate, endDate])
+  @@map("courses")
+}
+
+enum CourseStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+// ==================== NCP 계정 관리 ====================
+
+model NcpAccount {
+  id                String   @id @default(uuid())
+  courseId          String
+  displayName       String?  // 학생 이름 등
+  accessKeyEncrypted String  // AES-256 암호화된 Access Key
+  secretKeyEncrypted String  // AES-256 암호화된 Secret Key
+  accessKeyHash     String   // 검색/식별용 해시
+  isActive          Boolean  @default(true)
+  isMaster          Boolean  @default(false)  // Organization 마스터 계정 여부
+  ncpMemberNo       String?                   // NCP Organization 회원번호 (멤버별 비용 조회용)
+  lastSyncAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  course            Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  resources         Resource[]
+  usageRecords      UsageRecord[]
+  subAccounts       SubAccount[]
+  cleanupLogs       CleanupLog[]
+
+  @@unique([courseId, accessKeyHash])
+  @@index([courseId])
+  @@index([accessKeyHash])
+  @@map("ncp_accounts")
+}
+
+// ==================== 서브계정 ====================
+
+model SubAccount {
+  id              String   @id @default(uuid())
+  ncpAccountId    String
+  subAccountId    String   // NCP에서 반환한 서브계정 ID
+  name            String?
+  email           String?
+  status          String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  ncpAccount      NcpAccount @relation(fields: [ncpAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([ncpAccountId, subAccountId])
+  @@index([ncpAccountId])
+  @@map("sub_accounts")
+}
+
+// ==================== 리소스 인벤토리 ====================
+
+model Resource {
+  id              String   @id @default(uuid())
+  ncpAccountId    String
+  resourceType    ResourceType
+  resourceId      String   // NCP 리소스 ID
+  resourceName    String?
+  region          String?
+  status          String?
+  spec            Json?    // 리소스 스펙 정보
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  ncpAccount      NcpAccount @relation(fields: [ncpAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([ncpAccountId, resourceType, resourceId])
+  @@index([ncpAccountId])
+  @@index([resourceType])
+  @@map("resources")
+}
+
+enum ResourceType {
+  SERVER           // VPC Server
+  CLASSIC_SERVER   // Classic Server
+  BLOCK_STORAGE    // Block Storage
+  NAS              // NAS
+  OBJECT_STORAGE   // Object Storage
+  VPC              // VPC
+  SUBNET           // Subnet
+  NAT_GATEWAY      // NAT Gateway
+  LOAD_BALANCER    // Load Balancer
+  AUTO_SCALING     // Auto Scaling Group
+  KUBERNETES       // Kubernetes Service
+  DATABASE         // Cloud DB
+  OTHER
+}
+
+// ==================== 사용량 및 비용 ====================
+
+model UsageRecord {
+  id              String   @id @default(uuid())
+  ncpAccountId    String
+  serviceCode     String   // NCP 서비스 코드
+  serviceName     String   // 서비스 이름
+  usageDate       DateTime
+  usageQuantity   Float
+  usageUnit       String?
+  cost            Float    @default(0)
+  currency        String   @default("KRW")
+  rawData         Json?    // API 원본 데이터
+  createdAt       DateTime @default(now())
+
+  ncpAccount      NcpAccount @relation(fields: [ncpAccountId], references: [id], onDelete: Cascade)
+
+  @@unique([ncpAccountId, serviceCode, usageDate])
+  @@index([ncpAccountId])
+  @@index([usageDate])
+  @@index([serviceCode])
+  @@map("usage_records")
+}
+
+model CostSnapshot {
+  id            String   @id @default(uuid())
+  courseId      String
+  periodStart   DateTime
+  periodEnd     DateTime
+  totalCost     Float
+  currency      String   @default("KRW")
+  accountCount  Int
+  breakdown     Json?    // 서비스별 비용 내역
+  createdAt     DateTime @default(now())
+
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId])
+  @@index([periodStart, periodEnd])
+  @@map("cost_snapshots")
+}
+
+// ==================== 자동 정리 ====================
+
+model CleanupJob {
+  id            String   @id @default(uuid())
+  courseId      String
+  status        CleanupStatus @default(PENDING)
+  isDryRun      Boolean  @default(true)
+  scheduledAt   DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  summary       Json?    // 정리 결과 요약
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  course        Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  logs          CleanupLog[]
+
+  @@index([courseId])
+  @@index([status])
+  @@map("cleanup_jobs")
+}
+
+enum CleanupStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+model CleanupLog {
+  id            String   @id @default(uuid())
+  cleanupJobId  String
+  ncpAccountId  String?
+  action        String   // e.g., "DELETE_SERVER", "DELETE_SUBACCOUNT"
+  targetType    String   // e.g., "SERVER", "SUBACCOUNT"
+  targetId      String
+  targetName    String?
+  status        String   // SUCCESS, FAILED, SKIPPED
+  errorMessage  String?
+  executedAt    DateTime @default(now())
+
+  cleanupJob    CleanupJob @relation(fields: [cleanupJobId], references: [id], onDelete: Cascade)
+  ncpAccount    NcpAccount? @relation(fields: [ncpAccountId], references: [id], onDelete: SetNull)
+
+  @@index([cleanupJobId])
+  @@index([ncpAccountId])
+  @@map("cleanup_logs")
+}
+
+// ==================== 감사 로그 ====================
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  userId      String?
+  action      String   // e.g., "CREATE_COURSE", "DELETE_ACCOUNT"
+  entityType  String   // e.g., "Course", "NcpAccount"
+  entityId    String?
+  oldValue    Json?
+  newValue    Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
