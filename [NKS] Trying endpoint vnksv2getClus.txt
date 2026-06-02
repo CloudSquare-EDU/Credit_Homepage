@@ -1,0 +1,1010 @@
+[NKS] Trying endpoint: /vnks/v2/getClusterList?responseFormatType=json
+[NKS] Failed with endpoint: /vnks/v2/getClusterList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[NKS] Trying endpoint: /nks/v2/getClusterList?responseFormatType=json
+[NKS] Failed with endpoint: /nks/v2/getClusterList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[NKS] Trying endpoint: /vnks/v2/getClusters?responseFormatType=json
+[NKS] Failed with endpoint: /vnks/v2/getClusters?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[NKS] Trying endpoint: /nks/v2/getClusters?responseFormatType=json
+[NKS] Failed with endpoint: /nks/v2/getClusters?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+]: [NKS] Found 0 clusters
+]: [ASG] Found 0 groups
+]: [LOAD_BALANCER] Found 2 load balancers
+]: [LOAD_BALANCER 1/2] ✓ ai-ambulance-alb deleted
+]: [LOAD_BALANCER 2/2] ✓ ai-ambulance-nlb deleted
+]: [TARGET_GROUP] Found 3 target groups
+]: [TARGET_GROUP 1/3] ✗ ai-ambulance-nlbtg: {
+  "responseError": {
+    "returnCode": "1200059",
+    "returnMessage": "Target group in use."
+  }
+}
+]: [TARGET_GROUP 2/3] ✓ ai-ambulance-tg deleted
+]: [TARGET_GROUP 3/3] ✗ ai-ambulance-nlb-tg: {
+  "responseError": {
+    "returnCode": "1200059",
+    "returnMessage": "Target group in use."
+  }
+}
+[CLOUD_FUNCTIONS] Trying endpoint: /scf/v1/functions?responseFormatType=json
+[CLOUD_FUNCTIONS] Failed with endpoint: /scf/v1/functions?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[CLOUD_FUNCTIONS] Trying endpoint: /cloudFunctions/v1/getFunctionList?responseFormatType=json
+[CLOUD_FUNCTIONS] Failed with endpoint: /cloudFunctions/v1/getFunctionList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[CLOUD_FUNCTIONS] Trying endpoint: /scf/v2/functions?responseFormatType=json
+[CLOUD_FUNCTIONS] Failed with endpoint: /scf/v2/functions?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[CLOUD_FUNCTIONS] Trying endpoint: /cloudFunctions/v2/getFunctionList?responseFormatType=json
+[CLOUD_FUNCTIONS] Failed with endpoint: /cloudFunctions/v2/getFunctionList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[CLOUD_FUNCTIONS] All endpoints failed, assuming no functions exist
+]: [CLOUD_FUNCTION] Found 0 cloud functions
+]: [SERVER] Found 2 servers
+]: [POLL] Server 137971805 status=RUN, waiting 5s...
+]: [POLL] Server 137971805 status=RUN, waiting 5s...
+]: [POLL] Server 137971805 status=RUN, waiting 5s...
+]: [POLL] Server 137971805 status=RUN, waiting 5s...
+]: [POLL] Server 137971805 status=RUN, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137971805 status=NSTOP, waiting 5s...
+]: [POLL] Server 137876260 status=RUN, waiting 5s...
+]: [POLL] Server 137876260 status=RUN, waiting 5s...
+]: [POLL] Server 137876260 status=RUN, waiting 5s...
+]: [POLL] Server 137876260 status=RUN, waiting 5s...
+]: [POLL] Server 137876260 status=RUN, waiting 5s...
+]: [POLL] Server 137876260 status=RUN, waiting 5s...
+]: [POLL] Server 137876260 status=RUN, waiting 5s...
+]: [POLL] Server 137876260 status=RUN, waiting 5s...
+]: [POLL] Server 137876260 status=NSTOP, waiting 5s...
+]: [POLL] Server 137876260 status=NSTOP, waiting 5s...
+]: [POLL] Server 137876260 status=NSTOP, waiting 5s...
+]: [POLL] Server 137876260 status=NSTOP, waiting 5s...
+]: [POLL] Server 137876260 status=NSTOP, waiting 5s...
+]: [POLL] Server 137876260 status=NSTOP, waiting 5s...
+]: [POLL] Server 137876260 status=NSTOP, waiting 5s...
+]: [POLL] Server 137876260 status=NSTOP, waiting 5s...
+]: [POLL] Server 137876260 status=NSTOP, waiting 5s...
+]: [POLL] Server 137876260 status=NSTOP, waiting 5s...
+]: [POLL] Server 137876260 status=NSTOP, waiting 5s...
+]: [POLL] Server 137876260 status=NSTOP, waiting 5s...
+]: [POLL] Server 137876260 status=NSTOP, waiting 5s...
+]: [NETWORK_INTERFACE] Found 0 network interfaces
+]: [PUBLIC_IP] Found 1 public IPs
+[PUBLIC_IP] Trying delete endpoint: /vserver/v2/releasePublicIpInstance?publicIpInstanceNo=137549234&responseFormatType=json
+[PUBLIC_IP] Delete failed with endpoint: /vserver/v2/releasePublicIpInstance?publicIpInstanceNo=137549234&responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[PUBLIC_IP] Trying delete endpoint: /vserver/v2/deletePublicIpInstance?publicIpInstanceNo=137549234&responseFormatType=json
+[PUBLIC_IP] Delete failed with endpoint: /vserver/v2/deletePublicIpInstance?publicIpInstanceNo=137549234&responseFormatType=json, error: {
+  "responseError": {
+    "returnCode": "1003046",
+    "returnMessage": "This is an authorized IP that cannot be manipulated."
+  }
+}
+[PUBLIC_IP] Trying delete endpoint: /vserver/v2/deletePublicIpInstances?publicIpInstanceNoList.1=137549234&responseFormatType=json
+[PUBLIC_IP] Delete failed with endpoint: /vserver/v2/deletePublicIpInstances?publicIpInstanceNoList.1=137549234&responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[PUBLIC_IP] Trying delete endpoint: /vpc/v2/releasePublicIp?publicIpInstanceNo=137549234&responseFormatType=json
+[PUBLIC_IP] Delete failed with endpoint: /vpc/v2/releasePublicIp?publicIpInstanceNo=137549234&responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[PUBLIC_IP] Trying delete endpoint: /publicIp/v2/releasePublicIp?publicIpInstanceNo=137549234&responseFormatType=json
+[PUBLIC_IP] Delete failed with endpoint: /publicIp/v2/releasePublicIp?publicIpInstanceNo=137549234&responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+]: [NAT_GATEWAY] Found 1 NAT gateways
+[DEBUG] Found 4 route tables
+[DEBUG] Fetching detail for route table: ai-ambulance-prv-rt
+[DEBUG] Route table: ai-ambulance-prv-rt, has routeList: false, route count: 0
+[DEBUG] Fetching detail for route table: ai-ambulance-pub-rt
+[DEBUG] Route table: ai-ambulance-pub-rt, has routeList: false, route count: 0
+[DEBUG] Fetching detail for route table: ai-ambulance-vpc-default-private-table
+[DEBUG] Route table: ai-ambulance-vpc-default-private-table, has routeList: false, route count: 0
+[DEBUG] Fetching detail for route table: ai-ambulance-vpc-default-public-table
+[DEBUG] Route table: ai-ambulance-vpc-default-public-table, has routeList: false, route count: 0
+[DEBUG] Total deleted routes: 0
+[FORCE_DELETE] Found 4 route tables
+[FORCE_DELETE] Found 6 subnets in VPC 138325
+[FORCE_DELETE] Adding subnet CIDR: 10.4.15.0/24
+[FORCE_DELETE] Adding subnet CIDR: 10.4.14.0/24
+[FORCE_DELETE] Adding subnet CIDR: 10.4.13.0/24
+[FORCE_DELETE] Adding subnet CIDR: 10.4.12.0/24
+[FORCE_DELETE] Adding subnet CIDR: 10.4.11.0/24
+[FORCE_DELETE] Adding subnet CIDR: 10.4.10.0/24
+[FORCE_DELETE] Total 15 destination CIDRs to try
+[FORCE_DELETE] Processing route table: ai-ambulance-prv-rt
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=0.0.0.0/0, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=true, error=undefined
+[FORCE_DELETE] ✓ Removed route 0.0.0.0/0 -> NAT from ai-ambulance-prv-rt
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=10.0.0.0/8, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.0.0.0/8: {
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=172.16.0.0/12, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] ✗ Failed 172.16.0.0/12: {
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=192.168.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] ✗ Failed 192.168.0.0/16: {
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=10.0.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.0.0.0/16: {
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=10.0.0.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.0.0.0/24: {
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=10.1.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.1.0.0/16: {
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=172.16.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] ✗ Failed 172.16.0.0/16: {
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=192.168.0.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] ✗ Failed 192.168.0.0/24: {
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=10.4.15.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.15.0/24: {
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=10.4.14.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.14.0/24: {
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=10.4.13.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.13.0/24: {
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=10.4.12.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.12.0/24: {
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=10.4.11.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.11.0/24: {
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289973, dest=10.4.10.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.10.0/24: {
+  "responseError": {
+    "returnCode": "1017013",
+    "returnMessage": "Route Table is setting. Please try again in a moment."
+  }
+}
+[FORCE_DELETE] Processing route table: ai-ambulance-pub-rt
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=0.0.0.0/0, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013011",
+    "returnMessage": "Target format is invalid."
+  }
+}
+[FORCE_DELETE] ✗ Failed 0.0.0.0/0: {
+  "responseError": {
+    "returnCode": "1013011",
+    "returnMessage": "Target format is invalid."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=10.0.0.0/8, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.0.0.0/8: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=172.16.0.0/12, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 172.16.0.0/12: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=192.168.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 192.168.0.0/16: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=10.0.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.0.0.0/16: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=10.0.0.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.0.0.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=10.1.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.1.0.0/16: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=172.16.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 172.16.0.0/16: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=192.168.0.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 192.168.0.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=10.4.15.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.15.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=10.4.14.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.14.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=10.4.13.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.13.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=10.4.12.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.12.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=10.4.11.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.11.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289972, dest=10.4.10.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.10.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] Processing route table: ai-ambulance-vpc-default-private-table
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=0.0.0.0/0, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 0.0.0.0/0: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=10.0.0.0/8, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.0.0.0/8: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=172.16.0.0/12, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 172.16.0.0/12: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=192.168.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 192.168.0.0/16: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=10.0.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.0.0.0/16: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=10.0.0.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.0.0.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=10.1.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.1.0.0/16: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=172.16.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 172.16.0.0/16: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=192.168.0.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 192.168.0.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=10.4.15.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.15.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=10.4.14.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.14.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=10.4.13.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.13.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=10.4.12.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.12.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=10.4.11.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.11.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289945, dest=10.4.10.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.10.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] Processing route table: ai-ambulance-vpc-default-public-table
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=0.0.0.0/0, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013011",
+    "returnMessage": "Target format is invalid."
+  }
+}
+[FORCE_DELETE] ✗ Failed 0.0.0.0/0: {
+  "responseError": {
+    "returnCode": "1013011",
+    "returnMessage": "Target format is invalid."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=10.0.0.0/8, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.0.0.0/8: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=172.16.0.0/12, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 172.16.0.0/12: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=192.168.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 192.168.0.0/16: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=10.0.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.0.0.0/16: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=10.0.0.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.0.0.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=10.1.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.1.0.0/16: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=172.16.0.0/16, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 172.16.0.0/16: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=192.168.0.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 192.168.0.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=10.4.15.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.15.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=10.4.14.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.14.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=10.4.13.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.13.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=10.4.12.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.12.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=10.4.11.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.11.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[REMOVE_ROUTE] VPC=138325, RT=289944, dest=10.4.10.0/24, target=137549232, name=ai-ambulance-nat, type=NATGW
+[REMOVE_ROUTE] Result: success=false, error={
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] ✗ Failed 10.4.10.0/24: {
+  "responseError": {
+    "returnCode": "1013012",
+    "returnMessage": "There are no changed rules."
+  }
+}
+[FORCE_DELETE] Total deleted routes: 1
+]: [NAT_GATEWAY 1/1] ✓ ai-ambulance-nat deleted
+[VPC_ENDPOINT] Trying endpoint: /vpc/v2/getVpcEndpointInstanceList?responseFormatType=json
+[VPC_ENDPOINT] Failed with endpoint: /vpc/v2/getVpcEndpointInstanceList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[VPC_ENDPOINT] Trying endpoint: /vpc/v2/getVpcEndpointList?responseFormatType=json
+[VPC_ENDPOINT] Failed with endpoint: /vpc/v2/getVpcEndpointList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[VPC_ENDPOINT] Trying endpoint: /vpcEndpoint/v2/getVpcEndpointInstanceList?responseFormatType=json
+[VPC_ENDPOINT] Failed with endpoint: /vpcEndpoint/v2/getVpcEndpointInstanceList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[VPC_ENDPOINT] Trying endpoint: /vpcEndpoint/v2/getVpcEndpointList?responseFormatType=json
+[VPC_ENDPOINT] Failed with endpoint: /vpcEndpoint/v2/getVpcEndpointList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[VPC_ENDPOINT] All endpoints failed, assuming no endpoints exist
+]: [VPC_ENDPOINT] Found 0 VPC endpoints
+]: [SNAPSHOT] Found 0 snapshots
+[SERVER_IMAGE] Trying POST endpoint: /vpc-compute/v1/server-images
+[SERVER_IMAGE] POST Failed with endpoint: /vpc-compute/v1/server-images, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying POST endpoint: /vpc-servers/v1/server-images
+[SERVER_IMAGE] POST Failed with endpoint: /vpc-servers/v1/server-images, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying POST endpoint: /vserver/v2/getServerImageInstanceList
+[SERVER_IMAGE] POST Failed with endpoint: /vserver/v2/getServerImageInstanceList, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying POST endpoint: /vserver/v2/server-images
+[SERVER_IMAGE] POST Failed with endpoint: /vserver/v2/server-images, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /vserver/v2/getServerImageInstanceList?regionCode=KR&serverImageTypeCodeList.1=SELF&responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /vserver/v2/getServerImageInstanceList?regionCode=KR&serverImageTypeCodeList.1=SELF&responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /vserver/v2/getServerImageInstanceList?regionCode=KR&responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /vserver/v2/getServerImageInstanceList?regionCode=KR&responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /vpc-compute/v1/getServerImageList?responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /vpc-compute/v1/getServerImageList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /vpc-servers/v1/getServerImageList?responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /vpc-servers/v1/getServerImageList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /vpc-servers/v2/getServerImageList?responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /vpc-servers/v2/getServerImageList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /vserver/v2/getServerImageInstanceList?serverImageTypeCodeList.1=SELF&responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /vserver/v2/getServerImageInstanceList?serverImageTypeCodeList.1=SELF&responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /vserver/v2/getServerImageInstanceList?serverImageTypeCode=SELF&responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /vserver/v2/getServerImageInstanceList?serverImageTypeCode=SELF&responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /vserver/v2/getServerImageInstanceList?responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /vserver/v2/getServerImageInstanceList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /vserver/v1/getServerImageInstanceList?serverImageTypeCodeList.1=SELF&responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /vserver/v1/getServerImageInstanceList?serverImageTypeCodeList.1=SELF&responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /vserver/v2/getMemberServerImageInstanceList?regionCode=KR&responseFormatType=json
+[SERVER_IMAGE] GET Response data keys: [ 'getMemberServerImageInstanceListResponse' ]
+[SERVER_IMAGE] Endpoint /vserver/v2/getMemberServerImageInstanceList?regionCode=KR&responseFormatType=json: found 0 images (totalRows: 0)
+[SERVER_IMAGE] Failed with endpoint: /vserver/v2/getMemberServerImageInstanceList?regionCode=KR&responseFormatType=json, error: Unknown error
+[SERVER_IMAGE] Trying GET endpoint: /vserver/v2/getMemberServerImageInstanceList?responseFormatType=json
+[SERVER_IMAGE] GET Response data keys: [ 'getMemberServerImageInstanceListResponse' ]
+[SERVER_IMAGE] Endpoint /vserver/v2/getMemberServerImageInstanceList?responseFormatType=json: found 0 images (totalRows: 0)
+[SERVER_IMAGE] Failed with endpoint: /vserver/v2/getMemberServerImageInstanceList?responseFormatType=json, error: Unknown error
+[SERVER_IMAGE] Trying GET endpoint: /server/v2/getMemberServerImageList?regionCode=KR&responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /server/v2/getMemberServerImageList?regionCode=KR&responseFormatType=json, error: {
+  "responseError": {
+    "returnCode": "1103",
+    "returnMessage": "Forbidden."
+  }
+}
+[SERVER_IMAGE] Trying GET endpoint: /server/v2/getMemberServerImageList?responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /server/v2/getMemberServerImageList?responseFormatType=json, error: {
+  "responseError": {
+    "returnCode": "1103",
+    "returnMessage": "Forbidden."
+  }
+}
+[SERVER_IMAGE] Trying GET endpoint: /vserver/v3/getMemberServerImageList?responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /vserver/v3/getMemberServerImageList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /vserver/v2/getCustomImageList?responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /vserver/v2/getCustomImageList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /image/v2/getMemberImageList?responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /image/v2/getMemberImageList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /vserver/v2/getMemberServerImageList?responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /vserver/v2/getMemberServerImageList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /vserver/v2/getMyServerImageList?responseFormatType=json
+[SERVER_IMAGE] Failed with endpoint: /vserver/v2/getMyServerImageList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[SERVER_IMAGE] Trying GET endpoint: /vserver/v2/getServerImageProductList?responseFormatType=json
+[SERVER_IMAGE] GET Response data keys: [ 'getServerImageProductListResponse' ]
+[SERVER_IMAGE] Endpoint /vserver/v2/getServerImageProductList?responseFormatType=json: found 0 images (totalRows: 0)
+[SERVER_IMAGE] Failed with endpoint: /vserver/v2/getServerImageProductList?responseFormatType=json, error: Unknown error
+[SERVER_IMAGE] All endpoints failed or returned 0 images
+]: [SUBNET] Found 6 subnets
+]: [SUBNET 2/6] ✓ ai-ambulance-sub-nlb deleted
+]: [SUBNET 3/6] ✓ ai-ambulance-sub-nat deleted
+]: [SUBNET 6/6] ✓ ai-ambulance-sub-alb deleted
+[VPC_PEERING] Trying endpoint: /vpc/v2/getVpcPeeringInstanceList?responseFormatType=json
+[VPC_PEERING] Success with endpoint: /vpc/v2/getVpcPeeringInstanceList?responseFormatType=json, found 0 peerings
+]: [VPC] Found 1 VPCs
+]: [SUBACCOUNT] Found 0 sub-accounts
+[NKS] Trying endpoint: /vnks/v2/getClusterList?responseFormatType=json
+[NKS] Failed with endpoint: /vnks/v2/getClusterList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[NKS] Trying endpoint: /nks/v2/getClusterList?responseFormatType=json
+[NKS] Failed with endpoint: /nks/v2/getClusterList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[NKS] Trying endpoint: /vnks/v2/getClusters?responseFormatType=json
+[NKS] Failed with endpoint: /vnks/v2/getClusters?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[NKS] Trying endpoint: /nks/v2/getClusters?responseFormatType=json
+[NKS] Failed with endpoint: /nks/v2/getClusters?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+]: [NKS] Found 0 clusters
+]: [ASG] Found 0 groups
+]: [LOAD_BALANCER] Found 1 load balancers
+]: [LOAD_BALANCER 1/1] ✓ lb-matchup deleted
+]: [TARGET_GROUP] Found 1 target groups
+]: [TARGET_GROUP 1/1] ✗ tg-matchup-nginx-80: {
+  "responseError": {
+    "returnCode": "1200059",
+    "returnMessage": "Target group in use."
+  }
+}
+[CLOUD_FUNCTIONS] Trying endpoint: /scf/v1/functions?responseFormatType=json
+[CLOUD_FUNCTIONS] Failed with endpoint: /scf/v1/functions?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[CLOUD_FUNCTIONS] Trying endpoint: /cloudFunctions/v1/getFunctionList?responseFormatType=json
+[CLOUD_FUNCTIONS] Failed with endpoint: /cloudFunctions/v1/getFunctionList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[CLOUD_FUNCTIONS] Trying endpoint: /scf/v2/functions?responseFormatType=json
+[CLOUD_FUNCTIONS] Failed with endpoint: /scf/v2/functions?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[CLOUD_FUNCTIONS] Trying endpoint: /cloudFunctions/v2/getFunctionList?responseFormatType=json
+[CLOUD_FUNCTIONS] Failed with endpoint: /cloudFunctions/v2/getFunctionList?responseFormatType=json, error: {"error":{"errorCode":"300","message":"Not Found Exception","details":"URL not found."}}
+[CLOUD_FUNCTIONS] All endpoints failed, assuming no functions exist
+]: [CLOUD_FUNCTION] Found 0 cloud functions
+]: [SERVER] Found 1 servers
+]: [POLL] Server 138145538 status=RUN, waiting 5s...
+]: [POLL] Server 138145538 status=RUN, waiting 5s...
+]: [POLL] Server 138145538 status=RUN, waiting 5s...
+
+....(생략)...

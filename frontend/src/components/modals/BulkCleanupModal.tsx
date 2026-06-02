@@ -106,7 +106,6 @@ export default function BulkCleanupModal({ isOpen, onClose, accounts, courseId, 
         }
       }
     } catch (error) {
-      console.error('Cleanup failed:', error);
       toast.error('리소스 삭제에 실패했습니다');
     } finally {
       setIsDeleting(false);

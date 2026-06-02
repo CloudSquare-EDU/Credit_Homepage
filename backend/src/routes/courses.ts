@@ -6,11 +6,13 @@ import { Router } from 'express';
 import { body, query } from 'express-validator';
 import { Role, CourseStatus } from '@prisma/client';
 import * as courseController from '../controllers/courseController';
+import { syncAllAccounts } from '../controllers/courseSyncController';
+import { bulkCleanupResources } from '../controllers/courseCleanupController';
+import { getCourseCumulativeCosts } from '../controllers/courseCostController';
 import { authenticate, authorize } from '../middlewares/auth';
 
 const router = Router();
 
-// 모든 라우트는 인증 필요
 router.use(authenticate);
 
 // 과정 목록
@@ -66,20 +68,13 @@ router.put(
 );
 
 // 과정 삭제 (슈퍼관리자)
-router.delete(
-  '/:courseId',
-  authorize(Role.SUPER_ADMIN),
-  courseController.deleteCourse
-);
+router.delete('/:courseId', authorize(Role.SUPER_ADMIN), courseController.deleteCourse);
 
-// 과정 누적 전체 사용료 조회 (스냅샷 기반)
-router.get('/:courseId/cumulative-costs', courseController.getCourseCumulativeCosts);
+// 과정 누적 전체 사용료 조회
+router.get('/:courseId/cumulative-costs', getCourseCumulativeCosts);
 
-// 과정 전체 동기화 (서브계정 + 리소스 + 비용 일괄 조회)
-router.post(
-  '/:courseId/sync-all',
-  courseController.syncAllAccounts
-);
+// 과정 전체 동기화
+router.post('/:courseId/sync-all', syncAllAccounts);
 
 // 선택된 계정들의 리소스 일괄 삭제 (슈퍼관리자)
 router.post(
@@ -89,7 +84,7 @@ router.post(
     body('accountIds').isArray({ min: 1 }).withMessage('accountIds must be a non-empty array'),
     body('isDryRun').optional().isBoolean()
   ],
-  courseController.bulkCleanupResources
+  bulkCleanupResources
 );
 
 export default router;

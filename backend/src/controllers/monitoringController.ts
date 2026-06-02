@@ -442,3 +442,100 @@ export const exportAccountsCsv = async (
     next(error);
   }
 };
+
+/**
+ * 전체 크레딧 현황 조회 (DB 캐시 우선)
+ * ?refresh=true 파라미터로 NCP API 직접 조회 가능
+ */
+export const getCredits = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> => {
+  try {
+    const forceRefresh = req.query.refresh === 'true';
+
+    const masterAccounts = await prisma.ncpAccount.findMany({
+      where: { isMaster: true, isActive: true },
+      select: {
+        id: true,
+        displayName: true,
+        accessKeyEncrypted: true,
+        secretKeyEncrypted: true,
+        accessKeyHash: true,
+        creditData: true,
+        creditUpdatedAt: true,
+        course: { select: { id: true, name: true } }
+      }
+    });
+
+    if (masterAccounts.length === 0) {
+      res.json({ success: true, data: { accounts: [], totalCredit: 0, usedCredit: 0, remainCredit: 0 } });
+      return;
+    }
+
+    // 중복 제거
+    const seen = new Set<string>();
+    const uniqueMasters = masterAccounts.filter(a => {
+      const key = a.accessKeyHash || a.id;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    // DB 캐시가 있고 강제 새로고침이 아니면 캐시 반환 (NCP API 호출 생략)
+    const allHaveCache = uniqueMasters.every(m => m.creditData != null);
+    if (allHaveCache && !forceRefresh) {
+      const accounts = uniqueMasters.map(master => ({
+        accountId: master.id,
+        accountName: master.displayName || master.id,
+        courseName: master.course.name,
+        courseId: master.course.id,
+        updatedAt: master.creditUpdatedAt,
+        ...(master.creditData as object)
+      }));
+      type CachedAccount = { totalCredit?: number; usedCredit?: number; remainCredit?: number };
+      const totalCredit  = accounts.reduce((s, a) => s + ((a as CachedAccount).totalCredit  ?? 0), 0);
+      const usedCredit   = accounts.reduce((s, a) => s + ((a as CachedAccount).usedCredit   ?? 0), 0);
+      const remainCredit = accounts.reduce((s, a) => s + ((a as CachedAccount).remainCredit ?? 0), 0);
+      res.json({ success: true, data: { accounts, totalCredit, usedCredit, remainCredit, fromCache: true } });
+      return;
+    }
+
+    // 캐시 없거나 강제 새로고침 → NCP API 조회 후 DB 저장
+    const results = await Promise.allSettled(
+      uniqueMasters.map(async (master) => {
+        const accessKey = decrypt(master.accessKeyEncrypted);
+        const secretKey = decrypt(master.secretKeyEncrypted);
+        const ncpClient = new NcpClient({ accessKey, secretKey });
+        const credit = await ncpClient.billing.getCreditBalance();
+
+        // DB에 캐시 저장
+        await prisma.ncpAccount.update({
+          where: { id: master.id },
+          data: { creditData: credit as object, creditUpdatedAt: new Date() }
+        });
+
+        return {
+          accountId: master.id,
+          accountName: master.displayName || master.id,
+          courseName: master.course.name,
+          courseId: master.course.id,
+          ...credit
+        };
+      })
+    );
+
+    type AccountCreditResult = { success: boolean; totalCredit: number; usedCredit: number; remainCredit: number };
+    const accounts = results
+      .filter((r): r is PromiseFulfilledResult<AccountCreditResult & Record<string, unknown>> => r.status === 'fulfilled')
+      .map(r => r.value);
+    const totalCredit  = accounts.reduce((s, a) => s + (a.success ? a.totalCredit  : 0), 0);
+    const usedCredit   = accounts.reduce((s, a) => s + (a.success ? a.usedCredit   : 0), 0);
+    const remainCredit = accounts.reduce((s, a) => s + (a.success ? a.remainCredit : 0), 0);
+
+    res.json({ success: true, data: { accounts, totalCredit, usedCredit, remainCredit, fromCache: false } });
+  } catch (error) {
+    next(error);
+  }
+};

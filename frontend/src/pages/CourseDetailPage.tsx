@@ -1,4 +1,4 @@
-﻿import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   PlusIcon,
@@ -29,6 +29,7 @@ import BulkDeleteModal from '../components/modals/BulkDeleteModal';
 import BulkCleanupModal from '../components/modals/BulkCleanupModal';
 import BulkRenameModal from '../components/modals/BulkRenameModal';
 import MemberNoModal from '../components/modals/MemberNoModal';
+import AccountRow from '../components/course/AccountRow';
 
 
 // 계정 이름에서 숫자 추출하여 정렬용으로 사용
@@ -62,7 +63,7 @@ export default function CourseDetailPage() {
           return parsed;
         }
       } catch (e) {
-        console.error('Failed to load resources from localStorage:', e);
+        // localStorage 로드 실패 — 무시
       }
     }
     return {};
@@ -88,7 +89,7 @@ export default function CourseDetailPage() {
   }>>({});
   const [isFetchingHistory, setIsFetchingHistory] = useState(false);
 
-  // 전체 누적 사용료 (NCP billing API 직접 조회)
+  // 전체 누적 사용료 (NCP billing API 직접 조회 or DB 캐시)
   const [cumulativeCosts, setCumulativeCosts] = useState<{
     totalCost: number;
     periods: number;
@@ -97,6 +98,7 @@ export default function CourseDetailPage() {
     byAccount: Array<{ accountId: string; accountName: string; cost: number }>;
   } | null>(null);
   const [isFetchingCumulative, setIsFetchingCumulative] = useState(false);
+  const [cumulativeUpdatedAt, setCumulativeUpdatedAt] = useState<string | null>(null);
 
   // 현재 YYYYMM 반환
   const getCurrentYearMonth = () => {
@@ -149,7 +151,7 @@ export default function CourseDetailPage() {
       try {
         localStorage.setItem(`course_${courseId}_resources`, JSON.stringify(accountResourceMap));
       } catch (e) {
-        console.error('Failed to save resources to localStorage:', e);
+        // localStorage 저장 실패 — 무시
       }
     }, 500);
   }, [courseId, accountResourceMap]);
@@ -164,9 +166,17 @@ export default function CourseDetailPage() {
           return extractNumber(a.displayName) - extractNumber(b.displayName);
         });
         setAccounts(sortedAccounts);
+        // DB 캐시 값이 있으면 즉시 표시
+        if (response.data.totalCumulativeCost != null) {
+          setCumulativeCosts({
+            totalCost: response.data.totalCumulativeCost,
+            periods: 0,
+            byAccount: []
+          });
+          setCumulativeUpdatedAt(response.data.cumulativeCostUpdatedAt ?? null);
+        }
       }
     } catch (error) {
-      console.error('Failed to load course:', error);
       toast.error('과정 정보를 불러오는데 실패했습니다');
     } finally {
       setIsLoading(false);
@@ -193,7 +203,8 @@ export default function CourseDetailPage() {
             resources: result.resources,
             totalResourceCount: result.totalResourceCount,
             totalCost: result.totalCost || result.totalUseAmount,
-            lastSynced: new Date()
+            lastSynced: new Date(),
+            services: result.services || []
           };
         });
         setAccountResourceMap(prev => ({ ...prev, ...newResourceMap }));
@@ -224,7 +235,6 @@ export default function CourseDetailPage() {
         loadCourse();
       }
     } catch (error) {
-      console.error('Sync failed:', error);
       toast.error('동기화에 실패했습니다');
     } finally {
       setIsSyncingAll(false);
@@ -283,6 +293,7 @@ export default function CourseDetailPage() {
       const res = await courseApi.getCumulativeCosts(courseId);
       if (res.success && res.data) {
         setCumulativeCosts(res.data);
+        setCumulativeUpdatedAt(new Date().toISOString());
         toast.success(`전체 사용료 조회 완료 (${res.data.periods}개월)`);
       }
     } catch {
@@ -484,8 +495,16 @@ export default function CourseDetailPage() {
   }, [accountResourceMap]);
 
   // 계정별 전체 누적 비용 맵 (accountId → cost)
+  // DB 캐시(account.totalCumulativeCost)를 기본값으로, 직접 조회 결과로 덮어씌움
   const cumulativeAccountCostMap = useMemo(() => {
     const map: Record<string, number> = {};
+    // 1. DB 캐시 먼저 채움
+    for (const acc of accounts) {
+      if (acc.totalCumulativeCost != null) {
+        map[acc.id] = acc.totalCumulativeCost;
+      }
+    }
+    // 2. 직접 조회 결과로 덮어씌움 (더 최신)
     if (cumulativeCosts?.byAccount) {
       for (const entry of cumulativeCosts.byAccount) {
         map[entry.accountId] = entry.cost;
@@ -683,13 +702,29 @@ export default function CourseDetailPage() {
                   <p className="text-sm font-semibold text-gray-400">조회 중...</p>
                 ) : cumulativeCosts ? (
                   <>
-                    <p className="text-sm font-bold text-blue-700">
-                      {cumulativeCosts.totalCost > 0 ? formatCostExact(cumulativeCosts.totalCost) : '-'}
-                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-bold text-blue-700">
+                        {cumulativeCosts.totalCost > 0 ? formatCostExact(cumulativeCosts.totalCost) : '-'}
+                      </p>
+                      <button
+                        onClick={handleFetchCumulativeCosts}
+                        disabled={isFetchingCumulative}
+                        className="text-gray-300 hover:text-gray-500"
+                        title="새로고침"
+                      >
+                        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                      </button>
+                    </div>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {cumulativeCosts.startMonth === cumulativeCosts.endMonth
-                        ? `${formatYearMonth(cumulativeCosts.startMonth ?? '')} (VAT 제외)`
-                        : `${cumulativeCosts.periods}개월 누적 (VAT 제외)`}
+                      {cumulativeCosts.periods > 0
+                        ? `${cumulativeCosts.periods}개월 누적 (VAT 제외)`
+                        : 'VAT 제외'}
+                      {cumulativeUpdatedAt && ` · ${(() => {
+                        const diff = Math.floor((Date.now() - new Date(cumulativeUpdatedAt).getTime()) / 86400000);
+                        return diff === 0 ? '오늘 업데이트' : `${diff}일 전 업데이트`;
+                      })()}`}
                     </p>
                   </>
                 ) : (
@@ -769,12 +804,41 @@ export default function CourseDetailPage() {
               onClick={handleFetchCumulativeCosts}
               disabled={isFetchingCumulative}
               className="flex items-center gap-1 px-3 py-1 text-sm bg-blue-50 text-blue-700 border border-blue-200 rounded hover:bg-blue-100 disabled:opacity-50 font-medium"
+              title="과정 시작~현재까지 계정별 누적 비용을 NCP API에서 다시 조회합니다"
             >
               <ArrowPathIcon className={`h-3.5 w-3.5 ${isFetchingCumulative ? 'animate-spin' : ''}`} />
-              {isFetchingCumulative ? '조회 중...' : cumulativeCosts ? '전체 사용료 새로고침' : '전체 사용료 조회'}
+              {isFetchingCumulative ? '조회 중...' : '전체 사용료 새로고침'}
             </button>
           </div>
         </div>
+        {/* 전체 이용 서비스 현황 */}
+        {Object.keys(accountResourceMap).length > 0 && (() => {
+          const serviceCount: Record<string, number> = {};
+          for (const data of Object.values(accountResourceMap)) {
+            for (const svc of data.services ?? []) {
+              serviceCount[svc] = (serviceCount[svc] ?? 0) + 1;
+            }
+          }
+          const uniqueServices = Object.entries(serviceCount).sort((a, b) => b[1] - a[1]);
+          if (uniqueServices.length === 0) return null;
+          return (
+            <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+              <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide mb-2">
+                전체 계정 이용 중인 구독 서비스
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {uniqueServices.map(([name, count]) => (
+                  <span key={name} className="inline-flex items-center gap-1 px-2.5 py-1 bg-white border border-amber-200 text-amber-800 text-xs font-medium rounded-full">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 inline-block" />
+                    {name}
+                    {count > 1 && <span className="text-amber-500 font-bold ml-0.5">×{count}</span>}
+                  </span>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div className="flex items-center gap-3">
             <h2 className="text-lg font-semibold text-gray-900">등록된 계정</h2>
@@ -959,335 +1023,3 @@ export default function CourseDetailPage() {
     </div>
   );
 }
-
-function AccountRow({
-  account,
-  onRefresh,
-  canEdit,
-  resourceData,
-  historicalCostData,
-  isCurrentMonth,
-  cumulativeCost,
-  onResourceUpdate
-}: {
-  account: NcpAccount;
-  onRefresh: () => void;
-  canEdit: boolean;
-  resourceData: AccountResourceData | null;
-  historicalCostData: { totalCost: number; products: Array<{ productCode: string; productName: string; useAmount: number; demandAmount: number }> } | null;
-  isCurrentMonth: boolean;
-  cumulativeCost: number | null;
-  onResourceUpdate: (resources: Record<string, number>, totalResourceCount: number, totalCost: number) => void;
-}) {
-  const handleToggleMaster = async () => {
-    try {
-      if (account.isMaster) {
-        await accountApi.unsetMaster(account.id);
-        toast.success('마스터 계정이 해제되었습니다');
-      } else {
-        await accountApi.setMaster(account.id);
-        toast.success('마스터 계정으로 지정되었습니다');
-      }
-      onRefresh();
-    } catch {
-      toast.error('마스터 계정 설정에 실패했습니다');
-    }
-  };
-  const [isLoading, setIsLoading] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editName, setEditName] = useState(account.displayName || '');
-  const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
-
-  const handleSyncResources = async () => {
-    setIsLoading(true);
-    try {
-      // 리소스와 비용을 병렬로 조회
-      const [resourceRes, costRes] = await Promise.allSettled([
-        accountApi.syncResources(account.id),
-        accountApi.getCosts(account.id)
-      ]);
-
-      const resources: Record<string, number> = {};
-      if (resourceRes.status === 'fulfilled' && resourceRes.value.success && resourceRes.value.data) {
-        const data = resourceRes.value.data as Record<string, unknown>;
-        const resourceDataResult = (data.resources || data) as Record<string, number>;
-        // subAccounts는 리소스에서 제외 (서브계정은 별도 컬럼에 표시됨)
-        Object.entries(resourceDataResult).forEach(([key, value]) => {
-          if (key === 'subAccounts') return; // 서브계정 제외
-          if (typeof value === 'number' && value > 0) {
-            resources[key] = value;
-          }
-        });
-      }
-
-      let totalCost = 0;
-      if (costRes.status === 'fulfilled' && costRes.value.success && costRes.value.data) {
-        const costData = costRes.value.data as { totalUseAmount?: number; totalDemandAmount?: number; invoiceDemandAmount?: number };
-        totalCost = costData.invoiceDemandAmount ?? costData.totalDemandAmount ?? costData.totalUseAmount ?? 0;
-      }
-
-      const totalResourceCount = Object.values(resources).reduce((sum, count) => sum + count, 0);
-      onResourceUpdate(resources, totalResourceCount, totalCost);
-      setIsExpanded(true);
-      toast.success('리소스 정보를 가져왔습니다');
-    } catch (error) {
-      toast.error('리소스 정보를 가져오는데 실패했습니다');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSaveName = async () => {
-    const trimmed = editName.trim();
-    if (!trimmed) {
-      toast.error('이름을 입력해주세요');
-      return;
-    }
-    try {
-      await accountApi.update(account.id, { displayName: trimmed });
-      toast.success('이름이 수정되었습니다');
-      setIsEditingName(false);
-      onRefresh();
-    } catch (error) {
-      toast.error('이름 수정에 실패했습니다');
-    }
-  };
-
-  const handleCancelEdit = () => {
-    setEditName(account.displayName || '');
-    setIsEditingName(false);
-  };
-
-  return (
-    <>
-      <tr className="border-b border-gray-100 hover:bg-gray-50 group">
-        <td className="py-3 px-4">
-          {isEditingName ? (
-            <div className="flex items-center gap-1">
-              <input
-                type="text"
-                className="input py-1 px-2 text-sm w-32"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleSaveName();
-                  if (e.key === 'Escape') handleCancelEdit();
-                }}
-                autoFocus
-              />
-              <button onClick={handleSaveName} className="p-1 text-green-600 hover:bg-green-50 rounded">
-                <CheckIcon className="h-4 w-4" />
-              </button>
-              <button onClick={handleCancelEdit} className="p-1 text-gray-400 hover:bg-gray-100 rounded">
-                <XMarkIcon className="h-4 w-4" />
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 flex-wrap">
-              <Link
-                to={`/accounts/${account.id}`}
-                className="font-medium text-gray-900 hover:text-ncp-primary"
-              >
-                {account.displayName || '-'}
-              </Link>
-              {account.isMaster && (
-                <span className="px-1.5 py-0.5 text-[10px] font-bold bg-purple-100 text-purple-700 rounded border border-purple-200">
-                  마스터
-                </span>
-              )}
-              {account.ncpMemberNo && !account.isMaster && (
-                <span className="text-[10px] text-gray-400 font-mono">#{account.ncpMemberNo}</span>
-              )}
-              {canEdit && (
-                <>
-                  <button
-                    onClick={() => setIsEditingName(true)}
-                    className="p-1 text-gray-400 hover:text-ncp-primary rounded opacity-0 group-hover:opacity-100 transition-opacity"
-                    title="이름 수정"
-                  >
-                    <PencilIcon className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={handleToggleMaster}
-                    className={`px-1.5 py-0.5 text-[10px] rounded border opacity-0 group-hover:opacity-100 transition-opacity ${
-                      account.isMaster
-                        ? 'text-purple-600 border-purple-300 hover:bg-purple-50'
-                        : 'text-gray-400 border-gray-300 hover:bg-gray-50'
-                    }`}
-                    title={account.isMaster ? '마스터 해제' : '마스터로 지정'}
-                  >
-                    {account.isMaster ? '해제' : '마스터'}
-                  </button>
-                </>
-              )}
-            </div>
-          )}
-        </td>
-        <td className="py-3 px-4 text-sm text-gray-500 font-mono">
-          <div className="flex items-center gap-1">
-            <span>{account.accessKeyHash?.substring(0, 12)}...</span>
-            {canEdit && (
-              <button
-                onClick={() => setIsKeyModalOpen(true)}
-                className="p-1 text-gray-400 hover:text-ncp-primary rounded"
-                title="API 키 수정"
-              >
-                <KeyIcon className="h-4 w-4" />
-              </button>
-            )}
-          </div>
-        </td>
-        <td className="py-3 px-4 text-center text-sm font-medium">
-          {account._count?.subAccounts || 0}
-        </td>
-        <td className="py-3 px-4 text-center">
-          <div className="flex items-center justify-center gap-1">
-            <button
-              onClick={handleSyncResources}
-              disabled={isLoading}
-              className="p-1.5 text-gray-400 hover:text-ncp-primary hover:bg-gray-100 rounded"
-              title="리소스 조회"
-            >
-              <ArrowPathIcon className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            </button>
-            {(resourceData || (!isCurrentMonth && historicalCostData)) && (
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="p-1.5 text-gray-400 hover:text-ncp-primary hover:bg-gray-100 rounded"
-                title={isExpanded ? '접기' : '펼치기'}
-              >
-                {isExpanded ? <ChevronUpIcon className="h-4 w-4" /> : <ChevronDownIcon className="h-4 w-4" />}
-              </button>
-            )}
-            {isCurrentMonth && resourceData && (
-              <span className={`ml-1 text-xs font-medium ${resourceData.totalResourceCount > 0 ? 'text-red-600' : 'text-gray-400'}`}>
-                {resourceData.totalResourceCount}개
-              </span>
-            )}
-            {!isCurrentMonth && historicalCostData && (
-              <span className={`ml-1 text-xs font-medium ${historicalCostData.products.length > 0 ? 'text-blue-600' : 'text-gray-400'}`}>
-                {historicalCostData.products.length}종
-              </span>
-            )}
-          </div>
-        </td>
-        <td className="py-3 px-4 text-right">
-          {!isCurrentMonth ? (
-            historicalCostData ? (
-              historicalCostData.totalCost > 0 ? (
-                <span className="font-medium text-ncp-primary">{formatCostExact(historicalCostData.totalCost)}</span>
-              ) : (
-                <span className="text-gray-400 text-sm">0원</span>
-              )
-            ) : (
-              <span className="text-gray-300 text-sm">-</span>
-            )
-          ) : (
-            resourceData?.totalCost && resourceData.totalCost > 0 ? (
-              <span className="font-medium text-ncp-primary">{formatCostExact(resourceData.totalCost)}</span>
-            ) : resourceData ? (
-              <span className="text-gray-400 text-sm">0원</span>
-            ) : (
-              <span className="text-gray-300 text-sm">-</span>
-            )
-          )}
-        </td>
-        <td className="py-3 px-4 text-right">
-          {cumulativeCost != null ? (
-            cumulativeCost > 0 ? (
-              <span className="font-bold text-blue-700">{formatCostExact(cumulativeCost)}</span>
-            ) : (
-              <span className="text-gray-400 text-sm">0원</span>
-            )
-          ) : (
-            <span className="text-gray-300 text-sm">-</span>
-          )}
-        </td>
-      </tr>
-
-      {/* Expanded Resources / Historical Services Row */}
-      {isExpanded && (isCurrentMonth ? resourceData : (resourceData || historicalCostData)) && (
-        <tr className="bg-gray-50">
-          <td colSpan={6} className="px-4 py-3">
-            <div className="pl-4 space-y-3">
-              {/* 현재 월: 현재 보유 리소스 표시 */}
-              {isCurrentMonth && resourceData && (
-                <div>
-                  <p className="text-xs text-gray-500 mb-2">현재 보유 리소스:</p>
-                  {Object.keys(resourceData.resources).length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {Object.entries(resourceData.resources).map(([type, count]) => (
-                        <span
-                          key={type}
-                          className="px-2 py-1 bg-white border border-gray-200 text-xs text-gray-700 rounded"
-                        >
-                          {type}: <span className="font-medium text-red-600">{count}</span>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-green-600">보유 중인 리소스가 없습니다 ✓</p>
-                  )}
-                </div>
-              )}
-
-              {/* 과거 월: 사용 서비스 및 비용 표시 */}
-              {!isCurrentMonth && historicalCostData && (
-                <div>
-                  <p className="text-xs text-gray-500 mb-2">해당 월 사용 서비스:</p>
-                  {historicalCostData.products.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {historicalCostData.products.map((product) => (
-                        <span
-                          key={product.productCode}
-                          className="px-2 py-1 bg-white border border-blue-200 text-xs text-gray-700 rounded"
-                        >
-                          {product.productName}:{' '}
-                          <span className="font-medium text-blue-600">
-                            {formatCostExact(product.demandAmount || product.useAmount)}
-                          </span>
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-gray-400">해당 월 사용 내역이 없습니다</p>
-                  )}
-                </div>
-              )}
-
-              {/* 과거 월이지만 아직 조회 안 된 경우 */}
-              {!isCurrentMonth && !historicalCostData && resourceData && (
-                <div>
-                  <p className="text-xs text-gray-500 mb-2">현재 보유 리소스 (과거 비용 조회 필요):</p>
-                  <div className="flex flex-wrap gap-2">
-                    {Object.entries(resourceData.resources).map(([type, count]) => (
-                      <span
-                        key={type}
-                        className="px-2 py-1 bg-white border border-gray-200 text-xs text-gray-700 rounded"
-                      >
-                        {type}: <span className="font-medium text-red-600">{count}</span>
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </td>
-        </tr>
-      )}
-
-      {/* API Key Edit Modal */}
-      <EditApiKeyModal
-        isOpen={isKeyModalOpen}
-        account={account}
-        onClose={() => setIsKeyModalOpen(false)}
-        onSuccess={() => {
-          setIsKeyModalOpen(false);
-          onRefresh();
-        }}
-      />
-    </>
-  );
-}
-

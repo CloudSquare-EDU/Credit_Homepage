@@ -169,8 +169,6 @@ export class NcpBillingService extends NcpApiClient {
       endDateStr = yesterday.toISOString().slice(0, 10).replace(/-/g, '');
     }
 
-    console.log(`[Billing] Querying usage from ${startDateStr} to ${endDateStr}`);
-
     const response = await this.getDailyUsage(startDateStr, endDateStr);
 
     if (!response.success || !response.data) {
@@ -187,40 +185,30 @@ export class NcpBillingService extends NcpApiClient {
     const usageList = response.data.getContractUsageListByDailyResponse?.contractUsageListByDaily || [];
     const serviceMap = new Map<string, ServiceUsage>();
 
-    // 디버그: 첫 번째 아이템의 전체 구조 로깅
-    if (usageList.length > 0) {
-      console.log('[Billing Debug] First item structure:', JSON.stringify(usageList[0], null, 2));
-    } else {
-      console.log('[Billing Debug] No usage items returned');
-    }
-
     for (const item of usageList) {
-      const serviceName = item.contract?.contractType?.codeName || 'Unknown';
-      const serviceCode = item.contract?.contractType?.code || 'unknown';
-      const usageQty = item.usage?.usageQuantity || 0;
-      // 여러 가능한 비용 필드 확인 (NCP API 버전에 따라 다를 수 있음)
+      // 실제 NCP API 응답: usage.meteringType.{code,codeName} 이 서비스 식별자
       const usage = item.usage || {} as Record<string, unknown>;
-      const cost = Number(usage.useAmount) || Number(usage.useAmt) ||
-                   Number(usage.demandAmount) || Number(usage.demandAmt) || 0;
-      const usageUnit = item.usage?.usageUnitCode || '';
+      const meteringType = (usage as Record<string, unknown>).meteringType as { code?: string; codeName?: string } | undefined;
+      const serviceName = meteringType?.codeName
+        || (item.contract as Record<string, unknown> | undefined)?.contractType?.codeName as string
+        || 'Unknown';
+      const serviceCode = meteringType?.code
+        || (item.contract as Record<string, unknown> | undefined)?.contractType?.code as string
+        || 'unknown';
+      const usageQty = (usage as Record<string, unknown>).usageQuantity as number || 0;
+      const usageUnit = ((usage as Record<string, unknown>).unit as { code?: string } | undefined)?.code || '';
 
-      // 디버그: 비용이 0인 경우 usage 객체 로깅
-      if (cost === 0 && usageQty > 0) {
-        console.log('[Billing Debug] Cost is 0 but has usage. Full usage object:', JSON.stringify(usage));
-      }
-
-      if (usageQty > 0 || cost > 0) {
+      if (usageQty > 0) {
         const existing = serviceMap.get(serviceCode);
         if (existing) {
           existing.usageQuantity += usageQty;
-          existing.cost += cost;
         } else {
           serviceMap.set(serviceCode, {
             serviceCode,
             serviceName,
             usageQuantity: usageQty,
             usageUnit,
-            cost
+            cost: 0
           });
         }
       }
@@ -282,7 +270,7 @@ export class NcpBillingService extends NcpApiClient {
    * 특정 월 비용 조회
    * @param yearMonth - YYYYMM 형식 (예: "202501")
    */
-  async getMonthlyCostByMonth(yearMonth: string, isOrganization?: boolean): Promise<MonthlyCostResult> {
+  async getMonthlyCostByMonth(yearMonth: string, isOrganization?: boolean, memberNoList?: string[]): Promise<MonthlyCostResult> {
     // 입력 검증
     if (!/^\d{6}$/.test(yearMonth)) {
       return {
@@ -301,8 +289,8 @@ export class NcpBillingService extends NcpApiClient {
     //   - 마스터 계정(isOrganization=true)은 아래에서 invoiceResponse를 무시하고
     //     getProductDemandCost의 totalDemandAmount를 사용
     const [productResponse, invoiceResponse] = await Promise.allSettled([
-      this.getProductDemandCost(yearMonth, yearMonth, isOrganization),
-      this.getDemandCostList(yearMonth, yearMonth)
+      this.getProductDemandCost(yearMonth, yearMonth, isOrganization, memberNoList),
+      this.getDemandCostList(yearMonth, yearMonth, undefined, memberNoList)
     ]);
 
     const response = productResponse.status === 'fulfilled' ? productResponse.value : null;
@@ -324,8 +312,9 @@ export class NcpBillingService extends NcpApiClient {
     const costMap = new Map<string, { productCode: string; productName: string; demandAmount: number; useAmount: number }>();
 
     for (const item of costList) {
-      const productCode = item.productCode || item.productDemandType?.code || 'unknown';
-      const productName = item.productName || item.productDemandType?.codeName || '알 수 없음';
+      // productItemKindCode/Name이 실제 서비스 식별자, productDemandType은 청구 유형(선불/후불)
+      const productCode = item.productCode || item.productItemKindCode || item.productDemandType?.code || 'unknown';
+      const productName = item.productName || item.productItemKindName || item.productDemandType?.codeName || '알 수 없음';
       const key = productCode;
       const existing = costMap.get(key);
 
@@ -485,17 +474,32 @@ export class NcpBillingService extends NcpApiClient {
       // 현재 진행 중인 달은 getDemandCostList를 무시하고 getProductDemandCost 사용
       // (크레딧 중간 정산 등으로 totalDemandAmount=0인 row가 생성될 수 있어 실사용량 반영 안됨)
       if (!isCurrentMonth) {
-        // 이전 달: getDemandCostList → 확정 청구서 (모든 할인 반영)
+        // 이전 달: getDemandCostList → 확정 청구서
         const invoiceRes = await this.getDemandCostList(current, current, undefined, memberNoList);
         const invoiceList = invoiceRes.success ? (invoiceRes.data?.getDemandCostListResponse?.demandCostList ?? []) : [];
 
         if (invoiceList.length > 0) {
+          let monthInvoiceDemand = 0;
+          let monthInvoiceTotal = 0;
+          let monthUseAmount = 0;
           for (const inv of invoiceList) {
             const total = inv.totalDemandAmount ?? 0;
             const vat = inv.thisMonthVatAmount ?? 0;
-            invoiceTotalAmount += total;
-            invoiceDemandAmount += total - vat;
+            monthInvoiceTotal += total;
+            monthInvoiceDemand += total - vat;
+            monthUseAmount += inv.useAmount ?? 0;
           }
+
+          if (monthInvoiceDemand > 0) {
+            // 정상 청구 → 청구서 금액 사용
+            invoiceTotalAmount += monthInvoiceTotal;
+            invoiceDemandAmount += monthInvoiceDemand;
+          } else if (monthUseAmount > 0) {
+            // 크레딧 전액 삭감으로 청구 0원 → useAmount(크레딧 적용 전 실사용량) 사용
+            invoiceDemandAmount += monthUseAmount;
+            invoiceTotalAmount += monthUseAmount;
+          }
+          // 실사용량도 0이면 해당 월 0원으로 집계
           current = this.shiftMonth(current, 1);
           continue;
         }
@@ -521,12 +525,65 @@ export class NcpBillingService extends NcpApiClient {
   }
 
   /**
+   * 여러 계정의 누적 비용을 한 번의 API 호출 세트로 조회 (대량 최적화)
+   * memberNoList 전체를 한 번에 넘겨 DemandCostList 1회 호출로 멤버별 분리
+   * 반환: Map<memberNo, cost>
+   */
+  async getPerMemberCumulativeCosts(
+    startMonth: string,
+    endMonth: string,
+    memberNoList: string[]
+  ): Promise<Map<string, number>> {
+    const memberTotals = new Map<string, number>();
+    if (memberNoList.length === 0) return memberTotals;
+
+    const now = new Date();
+    const currentYM = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}`;
+    let current = startMonth;
+
+    while (current <= endMonth) {
+      const isCurrentMonth = current === currentYM;
+
+      if (!isCurrentMonth) {
+        // 이전 달: getDemandCostList에 전체 memberNo를 한 번에 전달
+        // → 응답에 memberNo별 row가 분리되어 반환됨
+        const invoiceRes = await this.getDemandCostList(current, current, undefined, memberNoList);
+        const invoiceList = invoiceRes.success
+          ? (invoiceRes.data?.getDemandCostListResponse?.demandCostList ?? [])
+          : [];
+
+        for (const inv of invoiceList) {
+          const memberNo = inv.memberNo;
+          if (!memberNo) continue;
+          const total = inv.totalDemandAmount ?? 0;
+          const vat = inv.thisMonthVatAmount ?? 0;
+          const demand = total - vat;
+          // 크레딧으로 0원 처리된 월은 useAmount(실사용량) 사용
+          const cost = demand > 0 ? demand : (inv.useAmount ?? 0);
+          memberTotals.set(memberNo, (memberTotals.get(memberNo) ?? 0) + cost);
+        }
+
+        current = this.shiftMonth(current, 1);
+        continue;
+      }
+
+      // 현재 달: getProductDemandCost로 추정 (invoice 미확정)
+      // 전체 memberNoList를 넘기면 응답이 멤버별로 분리되지 않을 수 있어
+      // productDemandType 기반 합산 후 memberNo별 배분은 불가 → 0원으로 처리
+      // (당월 비용은 다음날 반영되므로 실시간 조회 불필요)
+      current = this.shiftMonth(current, 1);
+    }
+
+    return memberTotals;
+  }
+
+  /**
    * 이번 달 비용 조회
    */
-  async getCurrentMonthCost(isOrganization?: boolean): Promise<MonthlyCostResult> {
+  async getCurrentMonthCost(isOrganization?: boolean, memberNoList?: string[]): Promise<MonthlyCostResult> {
     const now = new Date();
     const yearMonth = now.toISOString().slice(0, 7).replace('-', ''); // "202501"
-    return this.getMonthlyCostByMonth(yearMonth, isOrganization);
+    return this.getMonthlyCostByMonth(yearMonth, isOrganization, memberNoList);
   }
 
   /**
@@ -571,6 +628,106 @@ export class NcpBillingService extends NcpApiClient {
       ...servicesData,
       totalCost: costData?.totalDemandAmount || 0,
       monthlyCost: costData
+    };
+  }
+
+  /**
+   * 크레딧(코인) 현황 조회
+   * 보유 크레딧 총액, 사용액, 잔액, 만료일 반환
+   */
+  async getCreditBalance(): Promise<{
+    success: boolean;
+    credits: Array<{
+      coinType: string;
+      coinTypeName: string;
+      totalCoin: number;
+      usedCoin: number;
+      remainCoin: number;
+      expireMonth?: string;  // "YYYY-MM" 형식
+    }>;
+    totalCredit: number;
+    usedCredit: number;
+    remainCredit: number;
+    error?: string;
+  }> {
+    const creditUri = '/billing/v1/discount/getCreditHistoryList?responseFormatType=json';
+    const coinUri   = '/billing/v1/discount/getCoinHistoryList?responseFormatType=json';
+
+    const [creditRes, coinRes] = await Promise.allSettled([
+      this.request<Record<string, unknown>>(BILLING_API_URL, 'GET', creditUri),
+      this.request<Record<string, unknown>>(BILLING_API_URL, 'GET', coinUri)
+    ]);
+
+    const creditData = creditRes.status === 'fulfilled' ? creditRes.value : null;
+    const coinData   = coinRes.status   === 'fulfilled' ? coinRes.value   : null;
+
+    if (!creditData?.success && !coinData?.success) {
+      return { success: false, credits: [], totalCredit: 0, usedCredit: 0, remainCredit: 0, error: 'API 조회 실패' };
+    }
+
+    const credits: Array<{
+      coinType: string;
+      coinTypeName: string;
+      totalCoin: number;
+      usedCoin: number;
+      remainCoin: number;
+      expireMonth?: string;
+    }> = [];
+
+    // getCreditHistoryList 파싱
+    // 구조: { getCreditHistoryList: { creditHistoryList: [{ credit: { receivedCredit, remainingCredit, creditName, validityEndMonth, ... } }] } }
+    if (creditData?.success && creditData.data) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = creditData.data as any;
+      const list: unknown[] = raw?.getCreditHistoryList?.creditHistoryList ?? [];
+      for (const item of list) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const credit = (item as any)?.credit;
+        if (!credit) continue;
+        const received  = Number(credit.receivedCredit  ?? 0);
+        const remaining = Number(credit.remainingCredit ?? 0);
+        const endMonth  = credit.validityEndMonth as string | undefined; // "202609"
+        credits.push({
+          coinType: credit.creditType?.code ?? 'FREE',
+          coinTypeName: credit.creditName ?? credit.creditType?.codeName ?? '크레딧',
+          totalCoin: received,
+          usedCoin:  received - remaining,
+          remainCoin: remaining,
+          expireMonth: endMonth ? `${endMonth.slice(0, 4)}-${endMonth.slice(4, 6)}` : undefined
+        });
+      }
+    }
+
+    // getCoinHistoryList 파싱 (취소된 코인 제외)
+    // 구조: { getCoinHistoryList: { coinHistoryList: [{ coin: { chargedCoin, remainingCoin, coinName, coinStatus: { code } } }] } }
+    if (coinData?.success && coinData.data) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const raw = coinData.data as any;
+      const list: unknown[] = raw?.getCoinHistoryList?.coinHistoryList ?? [];
+      for (const item of list) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const coin = (item as any)?.coin;
+        if (!coin) continue;
+        if (coin.coinStatus?.code === 'CNCLSS') continue; // 취소된 코인 제외
+        const charged   = Number(coin.chargedCoin   ?? 0);
+        const remaining = Number(coin.remainingCoin ?? 0);
+        credits.push({
+          coinType: coin.coinType?.code ?? 'COIN',
+          coinTypeName: coin.coinName ?? coin.coinType?.codeName ?? '코인',
+          totalCoin: charged,
+          usedCoin:  charged - remaining,
+          remainCoin: remaining,
+          expireMonth: undefined
+        });
+      }
+    }
+
+    return {
+      success: true,
+      credits,
+      totalCredit: credits.reduce((s, c) => s + c.totalCoin, 0),
+      usedCredit:  credits.reduce((s, c) => s + c.usedCoin,  0),
+      remainCredit: credits.reduce((s, c) => s + c.remainCoin, 0)
     };
   }
 }

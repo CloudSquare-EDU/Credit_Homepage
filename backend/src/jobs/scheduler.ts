@@ -15,6 +15,7 @@ const prisma = new PrismaClient();
 
 /**
  * 일일 비용 스냅샷 저장 (매일 02:00)
+ * 각 활성 과정의 마스터 계정 기준 이번 달 비용 스냅샷 저장
  */
 async function dailyCostSnapshot(): Promise<void> {
   logger.info('Starting daily cost snapshot job');
@@ -25,65 +26,197 @@ async function dailyCostSnapshot(): Promise<void> {
       include: {
         accounts: {
           where: { isActive: true },
-          select: {
-            id: true,
-            accessKeyEncrypted: true,
-            secretKeyEncrypted: true
-          }
+          select: { id: true, accessKeyEncrypted: true, secretKeyEncrypted: true, isMaster: true }
         }
       }
     });
 
     for (const course of activeCourses) {
-      let totalCost = 0;
-      const breakdown: Record<string, number> = {};
+      try {
+        // 마스터 계정 우선 사용, 없으면 첫 번째 계정
+        const targetAccount = course.accounts.find(a => a.isMaster) ?? course.accounts[0];
+        if (!targetAccount) continue;
 
-      for (const account of course.accounts) {
-        try {
-          const accessKey = decrypt(account.accessKeyEncrypted);
-          const secretKey = decrypt(account.secretKeyEncrypted);
+        const accessKey = decrypt(targetAccount.accessKeyEncrypted);
+        const secretKey = decrypt(targetAccount.secretKeyEncrypted);
+        const ncpClient = new NcpClient({ accessKey, secretKey });
 
-          const ncpClient = new NcpClient({ accessKey, secretKey });
-          const services = await ncpClient.billing.getActiveServices();
+        const costResult = await ncpClient.billing.getCurrentMonthCost(targetAccount.isMaster ? true : undefined);
+        const totalCost = costResult.success
+          ? (costResult.invoiceDemandAmount ?? costResult.totalDemandAmount ?? 0)
+          : 0;
 
-          for (const service of services.serviceDetails) {
-            totalCost += service.cost || 0;
-            breakdown[service.serviceName] = (breakdown[service.serviceName] || 0) + (service.cost || 0);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        await prisma.costSnapshot.create({
+          data: {
+            courseId: course.id,
+            periodStart: today,
+            periodEnd: today,
+            totalCost,
+            accountCount: course.accounts.length,
+            breakdown: {}
           }
-        } catch (err) {
-          logger.error('Failed to get cost for account', {
-            accountId: account.id,
-            error: err
-          });
-        }
+        });
 
-        await new Promise(resolve => setTimeout(resolve, 200));
+        logger.info('Cost snapshot saved', { courseId: course.id, name: course.name, totalCost });
+      } catch (err) {
+        logger.error('Failed to save cost snapshot', { courseId: course.id, name: course.name, error: err });
       }
 
-      // 스냅샷 저장
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      await prisma.costSnapshot.create({
-        data: {
-          courseId: course.id,
-          periodStart: today,
-          periodEnd: today,
-          totalCost,
-          accountCount: course.accounts.length,
-          breakdown
-        }
-      });
-
-      logger.info('Cost snapshot saved', {
-        courseId: course.id,
-        totalCost
-      });
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
     logger.info('Daily cost snapshot job completed');
   } catch (error) {
     logger.error('Daily cost snapshot job failed', { error });
+  }
+}
+
+/**
+ * 크레딧/코인 현황 일일 갱신 (매일 03:30)
+ * 마스터 계정의 크레딧 잔액을 NCP API로 조회하여 DB 캐시 갱신
+ */
+async function dailyCreditUpdate(): Promise<void> {
+  logger.info('Starting daily credit update job');
+
+  try {
+    const masterAccounts = await prisma.ncpAccount.findMany({
+      where: { isMaster: true, isActive: true },
+      select: {
+        id: true,
+        displayName: true,
+        accessKeyEncrypted: true,
+        secretKeyEncrypted: true,
+        accessKeyHash: true
+      }
+    });
+
+    // 중복 제거 (같은 NCP 조직 마스터)
+    const seen = new Set<string>();
+    const unique = masterAccounts.filter(a => {
+      const key = a.accessKeyHash || a.id;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    let success = 0;
+    let fail = 0;
+
+    await Promise.allSettled(
+      unique.map(async (master) => {
+        try {
+          const accessKey = decrypt(master.accessKeyEncrypted);
+          const secretKey = decrypt(master.secretKeyEncrypted);
+          const ncpClient = new NcpClient({ accessKey, secretKey });
+          const credit = await ncpClient.billing.getCreditBalance();
+
+          await prisma.ncpAccount.update({
+            where: { id: master.id },
+            data: { creditData: credit as object, creditUpdatedAt: new Date() }
+          });
+
+          logger.info('Credit updated', {
+            account: master.displayName,
+            remain: credit.remainCredit,
+            total: credit.totalCredit
+          });
+          success++;
+        } catch (err) {
+          logger.error('Failed to update credit', { account: master.displayName, error: err });
+          fail++;
+        }
+      })
+    );
+
+    logger.info('Daily credit update job completed', { success, fail });
+  } catch (error) {
+    logger.error('Daily credit update job failed', { error });
+  }
+}
+
+/**
+ * 누적 사용료 일일 갱신 (매일 04:00)
+ * 모든 과정의 전체 사용료(과정 시작~현재)를 NCP API로 조회하여 DB에 캐시
+ */
+async function dailyCumulativeCostUpdate(): Promise<void> {
+  logger.info('Starting daily cumulative cost update job');
+
+  const toYM = (d: Date) => `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}`;
+
+  try {
+    const courses = await prisma.course.findMany({
+      where: { status: { not: CourseStatus.DRAFT } },
+      include: {
+        accounts: {
+          where: { isActive: true },
+          select: { id: true, displayName: true, accessKeyEncrypted: true, secretKeyEncrypted: true, isMaster: true, ncpMemberNo: true }
+        }
+      }
+    });
+
+    let success = 0;
+    let fail = 0;
+
+    for (const course of courses) {
+      try {
+        const masterAccount = course.accounts.find(a => a.isMaster);
+        if (!masterAccount) {
+          logger.warn('No master account for cumulative cost update', { courseId: course.id, name: course.name });
+          fail++;
+          continue;
+        }
+
+        const startMonth = toYM(new Date(course.startDate));
+        const endMonth = toYM(new Date());
+        const now = new Date();
+
+        const accessKey = decrypt(masterAccount.accessKeyEncrypted);
+        const secretKey = decrypt(masterAccount.secretKeyEncrypted);
+        const masterClient = new NcpClient({ accessKey, secretKey });
+
+        // 과정 전체 합계 (org 레벨)
+        const orgResult = await masterClient.billing.getCumulativeInvoiceCost(startMonth, endMonth);
+        const totalCost = orgResult.invoiceDemandAmount;
+
+        await prisma.course.update({
+          where: { id: course.id },
+          data: { totalCumulativeCost: totalCost, cumulativeCostUpdatedAt: now }
+        });
+
+        // 계정별 누적 비용 저장 (memberNo 있는 계정만, 전체 병렬)
+        const subAccountsWithMemberNo = course.accounts.filter(a => !a.isMaster && a.ncpMemberNo);
+        const subResults = await Promise.allSettled(
+          subAccountsWithMemberNo.map(account =>
+            masterClient.billing.getCumulativeInvoiceCost(startMonth, endMonth, [account.ncpMemberNo!])
+          )
+        );
+        await Promise.allSettled(
+          subAccountsWithMemberNo.map((account, idx) => {
+            const r = subResults[idx];
+            if (r.status !== 'fulfilled') return Promise.resolve();
+            return prisma.ncpAccount.update({
+              where: { id: account.id },
+              data: { totalCumulativeCost: r.value.invoiceDemandAmount, cumulativeCostUpdatedAt: now }
+            });
+          })
+        );
+
+        logger.info('Cumulative cost updated', { courseId: course.id, name: course.name, totalCost, accounts: subAccountsWithMemberNo.length });
+        success++;
+      } catch (err) {
+        logger.error('Failed to update cumulative cost', { courseId: course.id, name: course.name, error: err });
+        fail++;
+      }
+
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    logger.info('Daily cumulative cost update job completed', { success, fail });
+  } catch (error) {
+    logger.error('Daily cumulative cost update job failed', { error });
   }
 }
 
@@ -203,31 +336,71 @@ async function executeScheduledCleanups(): Promise<void> {
     });
 
     for (const job of scheduledJobs) {
-      logger.info('Executing scheduled cleanup job', { jobId: job.id });
+      if (!job.isDryRun) {
+        // 실제 삭제 작업은 대량 데이터 손실 위험 → 스케줄러 자동 실행 금지
+        // UI에서 명시적 확인(confirm: 'DELETE_ALL_RESOURCES') 후에만 실행
+        logger.warn('Scheduled non-dry-run cleanup skipped — requires manual UI confirmation', {
+          jobId: job.id,
+          courseId: job.courseId
+        });
+        continue;
+      }
 
-      // 여기서 실제 정리 로직 실행
-      // cleanupController의 executeCleanup과 유사한 로직
-
-      await prisma.cleanupJob.update({
-        where: { id: job.id },
-        data: {
-          status: CleanupStatus.RUNNING,
-          startedAt: new Date()
-        }
-      });
-
-      // TODO: 실제 정리 로직 구현
-      // 현재는 로그만 남김
+      // isDryRun: true — 리소스 현황 파악 (읽기 전용, 안전)
+      logger.info('Executing dry-run cleanup preview', { jobId: job.id });
 
       await prisma.cleanupJob.update({
         where: { id: job.id },
-        data: {
-          status: CleanupStatus.COMPLETED,
-          completedAt: new Date()
-        }
+        data: { status: CleanupStatus.RUNNING, startedAt: new Date() }
       });
 
-      logger.info('Scheduled cleanup job completed', { jobId: job.id });
+      try {
+        const resourceSummary: Record<string, number> = {};
+        let totalResources = 0;
+
+        for (const account of job.course.accounts) {
+          try {
+            const accessKey = decrypt(account.accessKeyEncrypted);
+            const secretKey = decrypt(account.secretKeyEncrypted);
+            const ncpClient = new NcpClient({ accessKey, secretKey });
+            const resources = await ncpClient.getAllResources();
+
+            const count =
+              resources.servers.count + resources.blockStorages.count +
+              resources.nasVolumes.count + resources.loadBalancers.count +
+              resources.natGateways.count;
+
+            if (count > 0) {
+              resourceSummary[account.displayName || account.id] = count;
+              totalResources += count;
+            }
+          } catch (err) {
+            logger.warn('Failed to check resources for account', { accountId: account.id, error: err });
+          }
+          await new Promise(resolve => setTimeout(resolve, 200));
+        }
+
+        await prisma.cleanupJob.update({
+          where: { id: job.id },
+          data: {
+            status: CleanupStatus.COMPLETED,
+            completedAt: new Date(),
+            summary: { isDryRun: true, totalResources, resourceSummary } as object
+          }
+        });
+
+        logger.info('Dry-run cleanup preview completed', {
+          jobId: job.id,
+          courseId: job.courseId,
+          totalResources
+        });
+      } catch (err) {
+        await prisma.cleanupJob.update({
+          where: { id: job.id },
+          data: { status: CleanupStatus.FAILED, completedAt: new Date() }
+        });
+        logger.error('Dry-run cleanup failed', { jobId: job.id, error: err });
+      }
     }
   } catch (error) {
     logger.error('Scheduled cleanup execution failed', { error });
@@ -293,27 +466,32 @@ async function syncResources(): Promise<void> {
 export function startScheduler(): void {
   logger.info('Starting scheduler');
 
-  // 과정 시작 체크 (매일 00:05) - DRAFT → ACTIVE
-  cron.schedule('5 0 * * *', checkCourseStatusStart);
+  // 매일 10:00 - 과정 상태 체크 (DRAFT→ACTIVE, ACTIVE→COMPLETED)
+  cron.schedule('0 10 * * *', checkCourseStatusStart);
+  cron.schedule('0 10 * * *', checkEndedCourses);
 
-  // 일일 비용 스냅샷 (매일 02:00)
-  cron.schedule('0 2 * * *', dailyCostSnapshot);
+  // 매일 10:05 - 크레딧/코인 현황 갱신 (빠름, 먼저 실행)
+  cron.schedule('5 10 * * *', dailyCreditUpdate);
 
-  // 종료 과정 체크 (매일 03:00) - ACTIVE → COMPLETED
-  cron.schedule('0 3 * * *', checkEndedCourses);
+  // 매일 10:10 - 일일 비용 스냅샷
+  cron.schedule('10 10 * * *', dailyCostSnapshot);
 
-  // 예약된 정리 작업 실행 (매 시간)
+  // 매일 10:20 - 누적 사용료 갱신 (가장 오래 걸림, 마지막 실행)
+  cron.schedule('20 10 * * *', dailyCumulativeCostUpdate);
+
+  // 예약된 정리 작업 실행 (매 시간 유지 - 예약 정리는 즉시성 필요)
   cron.schedule('0 * * * *', executeScheduledCleanups);
 
-  // 리소스 동기화 (매 6시간)
-  cron.schedule('0 */6 * * *', syncResources);
+  // 리소스 동기화 (매일 10:15)
+  cron.schedule('15 10 * * *', syncResources);
 
   logger.info('Scheduler started with following jobs:');
-  logger.info('- Course status check (DRAFT → ACTIVE): 00:05');
-  logger.info('- Daily cost snapshot: 02:00');
-  logger.info('- Ended courses check (ACTIVE → COMPLETED): 03:00');
+  logger.info('- Course status check (DRAFT↔ACTIVE↔COMPLETED): 10:00');
+  logger.info('- Credit/coin update: 10:05');
+  logger.info('- Daily cost snapshot: 10:10');
+  logger.info('- Resource sync: 10:15');
+  logger.info('- Cumulative cost update: 10:20');
   logger.info('- Scheduled cleanup execution: Every hour');
-  logger.info('- Resource sync: Every 6 hours');
 }
 
 // 수동 실행용 export
@@ -322,5 +500,7 @@ export {
   dailyCostSnapshot,
   checkEndedCourses,
   executeScheduledCleanups,
-  syncResources
+  syncResources,
+  dailyCumulativeCostUpdate,
+  dailyCreditUpdate
 };

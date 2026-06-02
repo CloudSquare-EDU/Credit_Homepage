@@ -3,14 +3,19 @@
  */
 
 import { Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, ResourceType } from '@prisma/client';
 import { AuthRequest } from '../middlewares/auth';
 import { createAuditLog, extractAuditInfo, maskApiKey } from '../middlewares/audit';
 import { AppError } from '../middlewares/errorHandler';
 import { encrypt, decrypt, hashValue } from '../utils/encryption';
 import { NcpClient } from '../services/ncp';
+import { ACCOUNT_NAME_PREFIX, ACCOUNT_NUMBER_PAD } from '../constants';
 
 const prisma = new PrismaClient();
+
+/** 계정 자동 이름 생성 유틸: '교육계정_cs001' 형식 */
+const buildAccountName = (prefix: string, num: number): string =>
+  `${prefix}${String(num).padStart(ACCOUNT_NUMBER_PAD, '0')}`;
 
 /**
  * 계정 추가 (단일)
@@ -33,13 +38,13 @@ export const addAccount = async (
     // 키 해시 생성 (중복 체크용)
     const accessKeyHash = hashValue(accessKey);
 
-    // 중복 체크
+    // 중복 체크 (같은 과정 내에서만 - 다른 과정에 동일 키 등록은 허용)
     const existing = await prisma.ncpAccount.findFirst({
-      where: { accessKeyHash }
+      where: { accessKeyHash, courseId }
     });
 
     if (existing) {
-      throw new AppError('This access key is already registered', 400);
+      throw new AppError('This access key is already registered in this course', 400);
     }
 
     // 마스터로 지정하는 경우 기존 마스터 해제
@@ -118,20 +123,20 @@ export const addAccountsBulk = async (
         const accessKeyHash = hashValue(accessKey);
 
         const existing = await prisma.ncpAccount.findFirst({
-          where: { accessKeyHash }
+          where: { accessKeyHash, courseId }
         });
 
         if (existing) {
           results.push({
             success: false,
             accessKey: maskApiKey(accessKey),
-            error: 'Already registered'
+            error: 'Already registered in this course'
           });
           continue;
         }
 
         const autoName = startNumber
-          ? `교육계정_cs${String(startNumber + i).padStart(3, '0')}`
+          ? buildAccountName(ACCOUNT_NAME_PREFIX, startNumber + i)
           : displayName || '';
 
         const account = await prisma.ncpAccount.create({
@@ -457,18 +462,35 @@ export const getAccountCosts = async (
       throw new AppError('Account not found', 404);
     }
 
-    const accessKey = decrypt(account.accessKeyEncrypted);
-    const secretKey = decrypt(account.secretKeyEncrypted);
+    let ncpClient: NcpClient;
+    let isOrganization: boolean | undefined;
+    let memberNoList: string[] | undefined;
 
-    const ncpClient = new NcpClient({ accessKey, secretKey });
-
-    const isOrganization = account.isMaster ? true : undefined;
+    // 일반 계정에 memberNo가 있으면 마스터 credentials + memberNoList 필터로 per-account 조회
+    if (!account.isMaster && account.ncpMemberNo) {
+      const masterAccount = await prisma.ncpAccount.findFirst({
+        where: { courseId: account.courseId, isMaster: true }
+      });
+      if (masterAccount) {
+        ncpClient = new NcpClient({
+          accessKey: decrypt(masterAccount.accessKeyEncrypted),
+          secretKey: decrypt(masterAccount.secretKeyEncrypted)
+        });
+        isOrganization = true;
+        memberNoList = [account.ncpMemberNo];
+      } else {
+        ncpClient = new NcpClient({ accessKey: decrypt(account.accessKeyEncrypted), secretKey: decrypt(account.secretKeyEncrypted) });
+      }
+    } else {
+      ncpClient = new NcpClient({ accessKey: decrypt(account.accessKeyEncrypted), secretKey: decrypt(account.secretKeyEncrypted) });
+      isOrganization = account.isMaster ? true : undefined;
+    }
 
     let result;
     if (month && typeof month === 'string' && /^\d{6}$/.test(month)) {
-      result = await ncpClient.billing.getMonthlyCostByMonth(month, isOrganization);
+      result = await ncpClient.billing.getMonthlyCostByMonth(month, isOrganization, memberNoList);
     } else {
-      result = await ncpClient.billing.getCurrentMonthCost(isOrganization);
+      result = await ncpClient.billing.getCurrentMonthCost(isOrganization, memberNoList);
     }
 
     res.json({
@@ -505,9 +527,80 @@ export const syncAccountResources = async (
     const ncpClient = new NcpClient({ accessKey, secretKey });
     const resources = await ncpClient.getAllResources();
 
-    // TODO: 리소스를 DB에 저장하는 로직 추가
+    // 리소스를 DB에 저장 (upsert) — 없어진 리소스는 soft delete
+    type ResourceRow = { type: ResourceType; items: unknown[] };
+    const getResourceId = (item: unknown, keys: string[]): string | null => {
+      const obj = item as Record<string, unknown>;
+      for (const k of keys) {
+        if (obj[k] && typeof obj[k] === 'string') return obj[k] as string;
+        if (obj[k] && typeof obj[k] === 'number') return String(obj[k]);
+      }
+      return null;
+    };
 
-    // 마지막 동기화 시간 업데이트
+    const resourceRows: ResourceRow[] = [
+      { type: ResourceType.SERVER,        items: resources.servers.items },
+      { type: ResourceType.VPC,           items: resources.vpcs.items },
+      { type: ResourceType.SUBNET,        items: resources.subnets.items },
+      { type: ResourceType.NAT_GATEWAY,   items: resources.natGateways.items },
+      { type: ResourceType.BLOCK_STORAGE, items: resources.blockStorages.items },
+      { type: ResourceType.NAS,           items: resources.nasVolumes.items },
+      { type: ResourceType.LOAD_BALANCER, items: resources.loadBalancers.items },
+    ];
+
+    const idKeyMap: Record<string, string[]> = {
+      SERVER:        ['serverInstanceNo', 'serverNo', 'instanceNo'],
+      VPC:           ['vpcNo'],
+      SUBNET:        ['subnetNo'],
+      NAT_GATEWAY:   ['natGatewayInstanceNo', 'instanceNo'],
+      BLOCK_STORAGE: ['blockStorageInstanceNo', 'instanceNo'],
+      NAS:           ['nasVolumeInstanceNo', 'instanceNo'],
+      LOAD_BALANCER: ['loadBalancerInstanceNo', 'instanceNo'],
+    };
+
+    const nameKeyMap: Record<string, string[]> = {
+      SERVER:        ['serverName', 'name'],
+      VPC:           ['vpcName', 'name'],
+      SUBNET:        ['subnetName', 'name'],
+      NAT_GATEWAY:   ['natGatewayName', 'name'],
+      BLOCK_STORAGE: ['blockStorageName', 'name'],
+      NAS:           ['volumeName', 'name'],
+      LOAD_BALANCER: ['loadBalancerName', 'name'],
+    };
+
+    const activeResourceIds = new Map<ResourceType, Set<string>>();
+
+    for (const { type, items } of resourceRows) {
+      const ids = new Set<string>();
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const rid = getResourceId(item, idKeyMap[type] ?? []) ?? `${type}_${i}`;
+        const rname = getResourceId(item, nameKeyMap[type] ?? []);
+        const obj = item as Record<string, unknown>;
+        ids.add(rid);
+        await prisma.resource.upsert({
+          where: { ncpAccountId_resourceType_resourceId: { ncpAccountId: accountId, resourceType: type, resourceId: rid } },
+          update: { resourceName: rname, status: (obj.serverStatus ?? obj.status) as string | undefined, deletedAt: null },
+          create: { ncpAccountId: accountId, resourceType: type, resourceId: rid, resourceName: rname, status: (obj.serverStatus ?? obj.status) as string | undefined }
+        });
+      }
+      activeResourceIds.set(type, ids);
+    }
+
+    // 현재 NCP에 없는 리소스 soft delete
+    for (const { type } of resourceRows) {
+      const activeIds = [...(activeResourceIds.get(type) ?? [])];
+      await prisma.resource.updateMany({
+        where: {
+          ncpAccountId: accountId,
+          resourceType: type,
+          resourceId: activeIds.length > 0 ? { notIn: activeIds } : undefined,
+          deletedAt: null
+        },
+        data: { deletedAt: new Date() }
+      });
+    }
+
     await prisma.ncpAccount.update({
       where: { id: accountId },
       data: { lastSyncAt: new Date() }
@@ -627,7 +720,7 @@ export const bulkRenameAccounts = async (
       accounts.map((account, i) =>
         prisma.ncpAccount.update({
           where: { id: account.id },
-          data: { displayName: `${prefix}${String(Number(startNumber) + i).padStart(3, '0')}` }
+          data: { displayName: buildAccountName(prefix, Number(startNumber) + i) }
         })
       )
     );
@@ -800,22 +893,11 @@ export const resetSubAccountPassword = async (
     const { newPassword } = req.body;
 
     if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 8) {
-      return res.status(400).json({
-        success: false,
-        error: '비밀번호는 8자 이상이어야 합니다'
-      });
+      throw new AppError('비밀번호는 8자 이상이어야 합니다', 400);
     }
 
-    const account = await prisma.ncpAccount.findUnique({
-      where: { id: accountId }
-    });
-
-    if (!account) {
-      return res.status(404).json({
-        success: false,
-        error: '계정을 찾을 수 없습니다'
-      });
-    }
+    const account = await prisma.ncpAccount.findUnique({ where: { id: accountId } });
+    if (!account) throw new AppError('Account not found', 404);
 
     const accessKey = decrypt(account.accessKeyEncrypted);
     const secretKey = decrypt(account.secretKeyEncrypted);
@@ -824,10 +906,7 @@ export const resetSubAccountPassword = async (
     const result = await ncpClient.subAccount.resetSubAccountPassword(subAccountId, newPassword);
 
     if (!result.success) {
-      return res.status(400).json({
-        success: false,
-        error: result.error || '비밀번호 초기화에 실패했습니다'
-      });
+      throw new AppError(result.error || '비밀번호 초기화에 실패했습니다', 400);
     }
 
     await createAuditLog({
@@ -858,16 +937,8 @@ export const deleteSubAccount = async (
   try {
     const { accountId, subAccountId } = req.params;
 
-    const account = await prisma.ncpAccount.findUnique({
-      where: { id: accountId }
-    });
-
-    if (!account) {
-      return res.status(404).json({
-        success: false,
-        error: '계정을 찾을 수 없습니다'
-      });
-    }
+    const account = await prisma.ncpAccount.findUnique({ where: { id: accountId } });
+    if (!account) throw new AppError('Account not found', 404);
 
     const accessKey = decrypt(account.accessKeyEncrypted);
     const secretKey = decrypt(account.secretKeyEncrypted);
@@ -878,10 +949,7 @@ export const deleteSubAccount = async (
     const result = await ncpClient.subAccount.deleteSubAccount(subAccountId);
 
     if (!result.success) {
-      return res.status(400).json({
-        success: false,
-        error: result.error || '서브계정 삭제에 실패했습니다'
-      });
+      throw new AppError(result.error || '서브계정 삭제에 실패했습니다', 400);
     }
 
     // DB에서도 서브계정 정보 삭제

@@ -80,6 +80,10 @@ model NcpAccount {
   isActive          Boolean  @default(true)
   isMaster          Boolean  @default(false)  // Organization 마스터 계정 여부
   ncpMemberNo       String?                   // NCP Organization 회원번호 (멤버별 비용 조회용)
+  totalCumulativeCost     Float?    // 누적 전체 사용료 캐시 (과정 시작~현재)
+  cumulativeCostUpdatedAt DateTime? // 누적 사용료 최근 갱신 시각
+  creditData              Json?     // 크레딧/코인 현황 캐시 (getCreditBalance 결과)
+  creditUpdatedAt         DateTime? // 크레딧 최근 갱신 시각
   lastSyncAt        DateTime?
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt

@@ -34,7 +34,6 @@ export default function CleanupPage() {
       if (jobsRes.success) setJobs(jobsRes.data || []);
       if (coursesRes.success) setCourses(coursesRes.data || []);
     } catch (error) {
-      console.error('Failed to load data:', error);
     } finally {
       setIsLoading(false);
     }

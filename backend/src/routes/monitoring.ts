@@ -26,4 +26,7 @@ router.get('/courses/:courseId/costs/export/csv', monitoringController.exportCos
 // 계정/서브계정 CSV 내보내기
 router.get('/courses/:courseId/accounts/export/csv', monitoringController.exportAccountsCsv);
 
+// 크레딧 현황
+router.get('/credits', monitoringController.getCredits);
+
 export default router;

@@ -11,8 +11,8 @@ import {
   BanknotesIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import { courseApi } from '../services/api';
-import type { Course } from '../types';
+import { courseApi, monitoringApi } from '../services/api';
+import type { Course, CreditInfo } from '../types';
 import LoadingSpinner from '../components/LoadingSpinner';
 import StatusBadge from '../components/StatusBadge';
 import Modal from '../components/Modal';
@@ -42,6 +42,7 @@ export default function CoursesPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [editingCourse, setEditingCourse] = useState<Course | null>(null);
   const [deletingCourse, setDeletingCourse] = useState<Course | null>(null);
+  const [creditMap, setCreditMap] = useState<Record<string, CreditInfo>>({});
   const { user } = useAuth();
 
   const canEdit = user?.role === 'SUPER_ADMIN' || user?.role === 'ADMIN';
@@ -50,6 +51,18 @@ export default function CoursesPage() {
   useEffect(() => {
     loadCourses();
   }, [statusFilter]);
+
+  useEffect(() => {
+    monitoringApi.getCredits().then(res => {
+      if (res.success && res.data) {
+        const map: Record<string, CreditInfo> = {};
+        for (const acc of res.data.accounts) {
+          if (acc.success) map[acc.courseId] = acc;
+        }
+        setCreditMap(map);
+      }
+    }).catch(() => {});
+  }, []);
 
   const loadCourses = async () => {
     try {
@@ -172,6 +185,15 @@ export default function CoursesPage() {
               : null;
             const isOverBudget = remaining != null && remaining < 0;
 
+            const creditInfo = creditMap[course.id] ?? null;
+            const creditItem = creditInfo?.credits?.[0] ?? null;
+            const isCoin = creditItem?.coinType === 'COIN';
+            const creditLabel = isCoin ? '코인' : '크레딧';
+            const usedPct = creditItem && creditItem.totalCoin > 0
+              ? Math.min(100, (creditItem.usedCoin / creditItem.totalCoin) * 100)
+              : null;
+            const creditWarn = usedPct != null && usedPct >= 80;
+
             return (
               <div
                 key={course.id}
@@ -249,7 +271,7 @@ export default function CoursesPage() {
                           {totalCumulativeCost! > 0 ? formatCostExact(totalCumulativeCost!) : '0원'}
                         </span>
                       ) : (
-                        <span className="text-gray-300 text-[11px]">미조회 (과정 클릭 후 조회)</span>
+                        <span className="text-gray-300 text-[11px]">업데이트 대기 중</span>
                       )}
                     </div>
                     {remaining != null && (
@@ -267,6 +289,36 @@ export default function CoursesPage() {
                       </div>
                     )}
                   </div>
+
+                  {/* 크레딧/코인 현황 */}
+                  {creditItem && (
+                    <div className={`border-t border-gray-50 pt-3 mt-2 space-y-1.5 ${creditWarn ? 'border-t-amber-100' : ''}`}>
+                      <div className="flex justify-between items-center text-xs">
+                        <span className={`font-medium flex items-center gap-1 ${creditWarn ? 'text-amber-600' : 'text-gray-500'}`}>
+                          {creditWarn && <span className="text-amber-500">⚠</span>}
+                          {creditLabel} 잔여
+                        </span>
+                        <span className={`font-bold ${creditWarn ? 'text-amber-600' : 'text-purple-600'}`}>
+                          {formatCostExact(creditItem.remainCoin)}
+                          {creditItem.totalCoin > 0 && (
+                            <span className="font-normal text-gray-400 ml-1">/ {formatCostExact(creditItem.totalCoin)}</span>
+                          )}
+                        </span>
+                      </div>
+                      {usedPct != null && creditItem.totalCoin > 0 && (
+                        <div className="w-full bg-gray-100 rounded-full h-1.5">
+                          <div
+                            className={`h-1.5 rounded-full transition-all ${usedPct >= 90 ? 'bg-red-500' : usedPct >= 80 ? 'bg-amber-500' : 'bg-purple-500'}`}
+                            style={{ width: `${usedPct.toFixed(1)}%` }}
+                          />
+                        </div>
+                      )}
+                      <div className="flex justify-between text-[10px] text-gray-400">
+                        <span>{usedPct?.toFixed(1)}% 사용</span>
+                        {creditItem.expireMonth && <span>~{creditItem.expireMonth}</span>}
+                      </div>
+                    </div>
+                  )}
 
                   {/* Tags */}
                   {course.tags && course.tags.length > 0 && (

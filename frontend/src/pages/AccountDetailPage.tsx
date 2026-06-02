@@ -69,7 +69,7 @@ export default function AccountDetailPage() {
       try {
         localStorage.setItem(getStorageKey(accountId), JSON.stringify(data));
       } catch (e) {
-        console.error('Failed to save to localStorage:', e);
+        // localStorage 저장 실패 — 무시
       }
     }
   }, [accountId]);
@@ -83,7 +83,7 @@ export default function AccountDetailPage() {
           return JSON.parse(saved);
         }
       } catch (e) {
-        console.error('Failed to load from localStorage:', e);
+        // localStorage 로드 실패 — 무시
       }
     }
     return null;
@@ -136,7 +136,6 @@ export default function AccountDetailPage() {
         // 비용 처리
         if (costsRes.status === 'fulfilled' && costsRes.value.success && costsRes.value.data) {
           const data = costsRes.value.data;
-          console.log('[Cost Debug] API Response:', JSON.stringify(data, null, 2));
           newMonthlyCost = data;
           setMonthlyCost(data);
           newTotalCost = data.totalDemandAmount || 0;
@@ -188,7 +187,6 @@ export default function AccountDetailPage() {
         setIsSyncing(false);
       }
     } catch (error) {
-      console.error('Failed to load account:', error);
       toast.error('계정 정보를 불러오는데 실패했습니다');
     } finally {
       setIsLoading(false);
@@ -210,7 +208,6 @@ export default function AccountDetailPage() {
         setTotalUseAmount(data.totalUseAmount || 0);
       }
     } catch (error) {
-      console.error('Failed to fetch cost:', error);
       toast.error('비용 조회에 실패했습니다');
     } finally {
       setIsFetchingCost(false);
@@ -430,39 +427,100 @@ export default function AccountDetailPage() {
           현재 보유 리소스
           <span className="text-sm font-normal text-gray-500 ml-2">(리소스가 있으면 서비스 이용 중)</span>
         </h2>
-        {Object.keys(resources).length > 0 ? (
-          <>
-            {Object.values(resources).some(count => count > 0) ? (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-                <p className="text-red-700 font-medium">⚠️ 리소스가 남아있습니다. 비용이 발생할 수 있습니다.</p>
-              </div>
-            ) : (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                <p className="text-green-700 font-medium">✓ 모든 리소스가 정리되었습니다.</p>
-              </div>
-            )}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-              {Object.entries(resources).map(([type, count]) => (
-                <div key={type} className={`rounded-lg p-4 text-center ${count > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
-                  <p className={`text-2xl font-bold ${count > 0 ? 'text-red-600' : 'text-gray-400'}`}>{count}</p>
-                  <p className="text-sm text-gray-500 capitalize">{type}</p>
+        {(() => {
+          const hasInfraResources = Object.keys(resources).length > 0 && Object.values(resources).some(c => c > 0);
+          const INFRA_PREFIXES = [
+            'Server', 'Block Storage', 'Virtual Private Cloud', 'Public IP',
+            'Network -', 'Software', 'Load Balancer', 'VPC Maintenance',
+            'NAT Gateway', 'Snapshot', 'NAS', 'Rule Count',
+            'Private IP', 'Inbound Data', 'Network IN', 'Network OUT'
+          ];
+          const isSubscriptionService = (name: string) =>
+            !INFRA_PREFIXES.some(prefix => name.startsWith(prefix));
+          // ncpMemberNo 미설정 일반 계정은 NCP 조직 전체 청구 데이터가 반환되어 per-account 조회 불가
+          const canShowServices = account?.isMaster || !!account?.ncpMemberNo;
+          const billedServices = canShowServices
+            ? (monthlyCost?.costs?.filter(c =>
+                c.productName && c.productName !== '알 수 없음' && isSubscriptionService(c.productName)
+              ) ?? [])
+            : [];
+          const hasBilledServices = billedServices.length > 0;
+          const synced = Object.keys(resources).length > 0;
+
+          return (
+            <>
+              {/* 상태 배너 */}
+              {synced && (
+                hasInfraResources ? (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+                    <p className="text-red-700 font-medium">⚠️ 인프라 리소스가 남아있습니다. 비용이 발생할 수 있습니다.</p>
+                  </div>
+                ) : hasBilledServices ? (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-4">
+                    <p className="text-amber-700 font-medium">✓ 인프라 리소스는 정리되었습니다.</p>
+                    <p className="text-amber-600 text-sm mt-0.5">현재 구독 중인 서비스가 있습니다. Object Storage, API Gateway 등 별도 확인이 필요한 서비스일 수 있습니다.</p>
+                  </div>
+                ) : !canShowServices ? (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                    <p className="text-green-700 font-medium">✓ 인프라 리소스는 정리되었습니다.</p>
+                  </div>
+                ) : (
+                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                    <p className="text-green-700 font-medium">✓ 모든 리소스가 정리되었습니다.</p>
+                  </div>
+                )
+              )}
+
+              {/* 인프라 리소스 그리드 */}
+              {Object.keys(resources).length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                  {Object.entries(resources).map(([type, count]) => (
+                    <div key={type} className={`rounded-lg p-4 text-center ${count > 0 ? 'bg-red-50' : 'bg-gray-50'}`}>
+                      <p className={`text-2xl font-bold ${count > 0 ? 'text-red-600' : 'text-gray-400'}`}>{count}</p>
+                      <p className="text-sm text-gray-500 capitalize">{type}</p>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </>
-        ) : isSyncing ? (
-          <div className="flex items-center justify-center py-4 text-gray-500">
-            <svg className="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-            </svg>
-            리소스 조회 중...
-          </div>
-        ) : (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-            <p className="text-green-700 font-medium">✓ 보유 중인 리소스가 없습니다.</p>
-          </div>
-        )}
+              ) : isSyncing ? (
+                <div className="flex items-center justify-center py-4 text-gray-500 mb-4">
+                  <svg className="animate-spin h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  리소스 조회 중...
+                </div>
+              ) : null}
+
+              {/* 이용 중인 구독 서비스 (memberNo 있는 계정만) */}
+              {canShowServices && hasBilledServices && (
+                <div className="mt-2">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                    이용 중인 구독 서비스
+                    <span className="ml-1 font-normal normal-case text-gray-400">(현재 구독 중인 서비스)</span>
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {billedServices.map((svc, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-800 text-xs font-medium rounded-full"
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500 inline-block" />
+                        {svc.productName}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 동기화 전 안내 */}
+              {!synced && !isSyncing && (
+                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <p className="text-green-700 font-medium">✓ 보유 중인 리소스가 없습니다.</p>
+                </div>
+              )}
+            </>
+          );
+        })()}
       </div>
 
       {/* Sub Accounts */}

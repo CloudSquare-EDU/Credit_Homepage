@@ -14,6 +14,7 @@ export interface AccountResourceData {
   totalResourceCount: number;
   totalCost: number;
   lastSynced: Date;
+  services?: string[];
 }
 
 // User types
@@ -59,6 +60,8 @@ export interface NcpAccount {
   isActive: boolean;
   isMaster?: boolean;
   ncpMemberNo?: string | null;
+  totalCumulativeCost?: number | null;
+  cumulativeCostUpdatedAt?: string | null;
   lastSyncAt?: string;
   createdAt: string;
   _count?: {
@@ -210,4 +213,31 @@ export interface DashboardData {
       email: string;
     };
   }>;
+}
+
+export interface CreditInfo {
+  accountId: string;
+  accountName: string;
+  courseName: string;
+  courseId: string;
+  success: boolean;
+  totalCredit: number;
+  usedCredit: number;
+  remainCredit: number;
+  credits: Array<{
+    coinType: string;
+    coinTypeName: string;
+    totalCoin: number;
+    usedCoin: number;
+    remainCoin: number;
+    expireMonth?: string;  // "YYYY-MM"
+  }>;
+  error?: string;
+}
+
+export interface CreditsData {
+  accounts: CreditInfo[];
+  totalCredit: number;
+  usedCredit: number;
+  remainCredit: number;
 }

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { ApiResponse, User, Course, NcpAccount, DashboardData, CleanupJob, MonthlyCostResult } from '../types';
+import type { ApiResponse, User, Course, NcpAccount, DashboardData, CleanupJob, MonthlyCostResult, CreditsData } from '../types';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
@@ -92,6 +92,7 @@ export const courseApi = {
         totalResourceCount: number;
         totalCost: number;
         totalUseAmount: number;
+        services: string[];
         error?: string;
       }>;
       summary: {
@@ -237,6 +238,10 @@ export const monitoringApi = {
   exportAccountsCsv: (courseId: string, includeSubAccounts: boolean = false) => {
     const params = includeSubAccounts ? '?includeSubAccounts=true' : '';
     window.open(`/api/monitoring/courses/${courseId}/accounts/export/csv${params}`, '_blank');
+  },
+  getCredits: async (refresh = false) => {
+    const { data } = await api.get<ApiResponse<CreditsData>>(`/monitoring/credits${refresh ? '?refresh=true' : ''}`);
+    return data;
   }
 };
 
